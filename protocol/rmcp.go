@@ -1,5 +1,14 @@
 package protocol
 
+import (
+	"bytes"
+	"encoding/binary"
+	"unsafe"
+	"io"
+	"net"
+	"log"
+)
+
 type RemoteManagementControlProtocol struct {
 	Version uint8
 	Reserved uint8
@@ -16,3 +25,28 @@ const (
 	RMCP_CLASS_IPMI	= 0x07
 	RMCP_CLASS_OEM	= 0x08
 )
+
+func DeserializeRMCP(buf io.Reader)  (length uint32, header RemoteManagementControlProtocol) {
+	binary.Read(buf, binary.BigEndian, &header)
+	length += uint32(unsafe.Sizeof(header))
+
+	return length, header
+}
+
+func SerializeRMCP(buf *bytes.Buffer, header RemoteManagementControlProtocol) {
+	binary.Write(buf, binary.BigEndian, header)
+}
+
+func RMCPDeserializeAndExecute(buf io.Reader, addr *net.UDPAddr, server *net.UDPConn) {
+	_, rmcp := DeserializeRMCP(buf)
+
+	switch rmcp.Class {
+	case RMCP_CLASS_ASF:
+		log.Println("  RMCP: Class = ASF")
+		ASFDeserializeAndExecute(buf, addr, server)
+	case RMCP_CLASS_IPMI:
+		log.Println("  RMCP: Class = IPMI")
+	case RMCP_CLASS_OEM:
+		log.Println("  RMCP: Class = OEM")
+	}
+}
