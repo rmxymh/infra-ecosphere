@@ -124,9 +124,13 @@ func BuildResponseMessageTemplate(requestWrapper IPMISessionWrapper, requestMess
 	responseWrapper := IPMISessionWrapper{}
 	responseWrapper.AuthenticationType = requestWrapper.AuthenticationType
 	responseWrapper.SequenceNumber = 0xff
-	responseWrapper.SessionId = 0x00
+	responseWrapper.SessionId = requestWrapper.SessionId
 
 	return responseWrapper, responseMessage
+}
+
+func HandleIPMIUnsupportedAppCommand(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
+	log.Println("      IPMI App: This command is not supported currently.")
 }
 
 type IPMIAuthenticationCapabilitiesRequest struct {
@@ -288,9 +292,9 @@ func HandleIPMIActivateSession(addr *net.UDPAddr, server *net.UDPConn, wrapper I
 		bmcUser := session.User
 		code := GetAuthenticationCode(wrapper.AuthenticationType, bmcUser.Password, wrapper.SessionId, message, wrapper.SequenceNumber)
 		if bytes.Compare(wrapper.AuthenticationCode[:], code[:]) == 0 {
-			log.Println("    IPMI Authentication Pass.")
+			log.Println("      IPMI Authentication Pass.")
 		} else {
-			log.Println("    IPMI Authentication Failed.")
+			log.Println("      IPMI Authentication Failed.")
 		}
 
 		session.RemoteSessionSequenceNumber = request.InitialOutboundSeq
@@ -321,50 +325,143 @@ func HandleIPMIActivateSession(addr *net.UDPAddr, server *net.UDPConn, wrapper I
 	}
 }
 
+type IPMISetSessionPrivilegeLevelRequest struct {
+	RequestPrivilegeLevel uint8
+}
+
+type IPMISetSessionPrivilegeLevelResponse struct {
+	NewPrivilegeLevel uint8
+}
+
+func HandleIPMISetSessionPrivilegeLevel(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
+	buf := bytes.NewBuffer(message.Data)
+	request := IPMISetSessionPrivilegeLevelRequest{}
+	binary.Read(buf, binary.BigEndian, &request)
+
+	//obuf := bytes.Buffer{}
+
+	session, ok := model.GetSession(wrapper.SessionId)
+	if ! ok {
+		log.Printf("Unable to find session 0x%08x\n", wrapper.SessionId)
+	} else {
+		bmcUser := session.User
+		code := GetAuthenticationCode(wrapper.AuthenticationType, bmcUser.Password, wrapper.SessionId, message, wrapper.SequenceNumber)
+		if bytes.Compare(wrapper.AuthenticationCode[:], code[:]) == 0 {
+			log.Println("      IPMI Authentication Pass.")
+		} else {
+			log.Println("      IPMI Authentication Failed.")
+		}
+
+		session.LocalSessionSequenceNumber += 1
+		session.RemoteSessionSequenceNumber += 1
+
+		response := IPMISetSessionPrivilegeLevelResponse{}
+		response.NewPrivilegeLevel = request.RequestPrivilegeLevel
+
+		dataBuf := bytes.Buffer{}
+		binary.Write(&dataBuf, binary.BigEndian, response)
+
+		responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_APP | IPMI_NETFN_RESPONSE), IPMI_CMD_SET_SESSION_PRIVILEGE)
+		responseMessage.Data = dataBuf.Bytes()
+
+		responseWrapper.SessionId = wrapper.SessionId
+		responseWrapper.SequenceNumber = session.RemoteSessionSequenceNumber
+		responseWrapper.AuthenticationCode = GetAuthenticationCode(wrapper.AuthenticationType, bmcUser.Password, responseWrapper.SessionId, responseMessage, responseWrapper.SequenceNumber)
+		rmcp := BuildUpRMCPForIPMI()
+
+		obuf := bytes.Buffer{}
+		SerializeRMCP(&obuf, rmcp)
+		SerializeIPMI(&obuf, responseWrapper, responseMessage)
+		server.WriteToUDP(obuf.Bytes(), addr)
+	}
+}
+
 func IPMI_APP_DeserializeAndExecute(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
 	switch message.Command {
 	case IPMI_CMD_GET_DEVICE_ID:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_DEVICE_ID")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_COLD_RESET:
 		log.Println("      IPMI APP: Command = IPMI_CMD_COLD_RESET")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_WARM_RESET:
 		log.Println("      IPMI APP: Command = IPMI_CMD_WARM_RESET")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_SELF_TEST_RESULTS:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_SELF_TEST_RESULTS")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_MANUFACTURING_TEST_ON:
 		log.Println("      IPMI APP: Command = IPMI_CMD_MANUFACTURING_TEST_ON")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_SET_ACPI_POWER_STATE:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SET_ACPI_POWER_STATE")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_ACPI_POWER_STATE:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_ACPI_POWER_STATE")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_DEVICE_GUID:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_DEVICE_GUID")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_RESET_WATCHDOG_TIMER:
 		log.Println("      IPMI APP: Command = IPMI_CMD_RESET_WATCHDOG_TIMER")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_SET_WATCHDOG_TIMER:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SET_WATCHDOG_TIMER")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_WATCHDOG_TIMER:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_WATCHDOG_TIMER")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_SET_BMC_GLOBAL_ENABLES:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SET_BMC_GLOBAL_ENABLES")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_BMC_GLOBAL_ENABLES:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_BMC_GLOBAL_ENABLES")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_CLEAR_MSG_FLAGS:
 		log.Println("      IPMI APP: Command =IPMI_CMD_CLEAR_MSG_FLAGS")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_MSG_FLAGS:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_MSG_FLAGS")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_ENABLE_MESSAGE_CHANNEL_RCV:
 		log.Println("      IPMI APP: Command = IPMI_CMD_ENABLE_MESSAGE_CHANNEL_RCV")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_MSG:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_MSG")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_SEND_MSG:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SEND_MSG")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_READ_EVENT_MSG_BUFFER:
 		log.Println("      IPMI APP: Command = IPMI_CMD_READ_EVENT_MSG_BUFFER")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_BT_INTERFACE_CAPABILITIES:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_BT_INTERFACE_CAPABILITIES")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_SYSTEM_GUID:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_SYSTEM_GUID")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_CHANNEL_AUTH_CAPABILITIES:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_CHANNEL_AUTH_CAPABILITIES")
 		HandleIPMIAuthenticationCapabilities(addr, server, wrapper, message)
@@ -376,55 +473,106 @@ func IPMI_APP_DeserializeAndExecute(addr *net.UDPAddr, server *net.UDPConn, wrap
 		HandleIPMIActivateSession(addr, server, wrapper, message)
 	case IPMI_CMD_SET_SESSION_PRIVILEGE:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SET_SESSION_PRIVILEGE")
+		HandleIPMISetSessionPrivilegeLevel(addr, server, wrapper, message)
 	case IPMI_CMD_CLOSE_SESSION:
 		log.Println("      IPMI APP: Command = IPMI_CMD_CLOSE_SESSION")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_SESSION_INFO:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_SESSION_INFO")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_AUTHCODE:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_AUTHCODE")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_SET_CHANNEL_ACCESS:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SET_CHANNEL_ACCESS")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_CHANNEL_ACCESS:
 		log.Println("      IPMI APP: Command =IPMI_CMD_GET_CHANNEL_ACCESS")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_CHANNEL_INFO:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_CHANNEL_INFO")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_SET_USER_ACCESS:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SET_USER_ACCESS")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_USER_ACCESS:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_USER_ACCESS")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_SET_USER_NAME:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SET_USER_NAME")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_USER_NAME:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_USER_NAME")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_SET_USER_PASSWORD:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SET_USER_PASSWORD")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_ACTIVATE_PAYLOAD:
 		log.Println("      IPMI APP: Command = IPMI_CMD_ACTIVATE_PAYLOAD")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_DEACTIVATE_PAYLOAD:
 		log.Println("      IPMI APP: Command = IPMI_CMD_DEACTIVATE_PAYLOAD")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_PAYLOAD_ACTIVATION_STATUS:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_PAYLOAD_ACTIVATION_STATUS")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_PAYLOAD_INSTANCE_INFO:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_PAYLOAD_INSTANCE_INFO")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_SET_USER_PAYLOAD_ACCESS:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SET_USER_PAYLOAD_ACCESS")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_USER_PAYLOAD_ACCESS:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_USER_PAYLOAD_ACCESS")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_CHANNEL_PAYLOAD_SUPPORT:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_CHANNEL_PAYLOAD_SUPPORT")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_CHANNEL_PAYLOAD_VERSION:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_CHANNEL_PAYLOAD_VERSION")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_CHANNEL_OEM_PAYLOAD_INFO:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_CHANNEL_OEM_PAYLOAD_INFO")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_MASTER_READ_WRITE:
 		log.Println("      IPMI APP: Command = IPMI_CMD_MASTER_READ_WRITE")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_CHANNEL_CIPHER_SUITES:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_CHANNEL_CIPHER_SUITES")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_SUSPEND_RESUME_PAYLOAD_ENCRYPTION:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SUSPEND_RESUME_PAYLOAD_ENCRYPTION")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_SET_CHANNEL_SECURITY_KEY:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SET_CHANNEL_SECURITY_KEY")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	case IPMI_CMD_GET_SYSTEM_INTERFACE_CAPABILITIES:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_SYSTEM_INTERFACE_CAPABILITIES")
+		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+
 	}
 }
