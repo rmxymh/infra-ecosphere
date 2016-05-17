@@ -6,6 +6,11 @@ import (
 	"log"
 	"encoding/binary"
 	"fmt"
+	"github.com/rmxymh/infra-ecosphere/model"
+	"math/rand"
+	"crypto/md5"
+
+	"github.com/htruong/go-md2"
 )
 
 // port from OpenIPMI
@@ -68,12 +73,18 @@ const (
 )
 
 const (
-	AUTH_NONE = 		0x01
-	AUTH_MD2 = 		0x02
-	AUTH_MD5 = 		0x04
-	AUTH_STRAIGHT_KEY =	0x10
-	AUTH_OEM = 		0x20
-	AUTH_IPMI_V2 = 		0x80
+	AUTH_NONE =	0x00
+	AUTH_MD2 =	0x01
+	AUTH_MD5 =	0x02
+)
+
+const (
+	AUTH_BITMASK_NONE = 		0x01
+	AUTH_BITMASK_MD2 = 		0x02
+	AUTH_BITMASK_MD5 = 		0x04
+	AUTH_BITMASK_STRAIGHT_KEY =	0x10
+	AUTH_BITMASK_OEM = 		0x20
+	AUTH_BITMASK_IPMI_V2 = 		0x80
 )
 
 const (
@@ -84,6 +95,39 @@ const (
 	AUTH_STATUS_PER_MESSAGE = 	0x10
 	AUTH_STATUS_KG =		0x20
 )
+
+const (
+	COMPLETION_CODE_OK = 			0x00
+	COMPLETION_CODE_INVALID_USERNAME =	0x81
+)
+
+func dumpByteBuffer(buf bytes.Buffer) {
+	bytebuf := buf.Bytes()
+	fmt.Print("[")
+	for i := 0 ; i < buf.Len(); i += 1 {
+		fmt.Printf(" %02x", bytebuf[i])
+	}
+	fmt.Println("]")
+}
+
+func BuildResponseMessageTemplate(requestWrapper IPMISessionWrapper, requestMessage IPMIMessage,  netfn uint8, command uint8) (IPMISessionWrapper, IPMIMessage) {
+	responseMessage := IPMIMessage{}
+	responseMessage.TargetAddress = requestMessage.SourceAddress
+	remoteLun := requestMessage.SourceLun & 0x03
+	localLun := requestMessage.TargetLun & 0x03
+	responseMessage.TargetLun = remoteLun | (netfn << 2)
+	responseMessage.SourceAddress = requestMessage.TargetAddress
+	responseMessage.SourceLun = (requestMessage.SourceLun & 0xfc) | localLun
+	responseMessage.Command = command
+	responseMessage.CompletionCode = COMPLETION_CODE_OK
+
+	responseWrapper := IPMISessionWrapper{}
+	responseWrapper.AuthenticationType = requestWrapper.AuthenticationType
+	responseWrapper.SequenceNumber = 0xff
+	responseWrapper.SessionId = 0x00
+
+	return responseWrapper, responseMessage
+}
 
 type IPMIAuthenticationCapabilitiesRequest struct {
 	AutnticationTypeSupport uint8
@@ -97,32 +141,18 @@ type IPMIAuthenticationCapabilitiesResponse struct {
 	ExtCapabilities uint8			// In IPMI v1.5, 0 is always put here. (Reserved)
 	OEMID [3]uint8
 	OEMAuxiliaryData uint8
-
-}
-
-const (
-	LEN_IPMI_AUTH_CAPABILITIES_RESPONSE = 8
-)
-
-func dumpByteBuffer(buf bytes.Buffer) {
-	bytebuf := buf.Bytes()
-	fmt.Print("[")
-	for i := 0 ; i < buf.Len(); i += 1 {
-		fmt.Printf(" %02x", bytebuf[i])
-	}
-	fmt.Println("]")
 }
 
 func HandleIPMIAuthenticationCapabilities(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
 	buf := bytes.NewBuffer(message.Data)
 	request := IPMIAuthenticationCapabilitiesRequest{}
-
 	binary.Read(buf, binary.BigEndian, &request)
 
+	// prepare for response data
 	// We don't simulate OEM related behavior
 	response := IPMIAuthenticationCapabilitiesResponse{}
 	response.Channel = 1
-	response.AuthenticationTypeSupport = AUTH_MD5 | AUTH_MD2 | AUTH_NONE
+	response.AuthenticationTypeSupport = AUTH_BITMASK_MD5 | AUTH_BITMASK_MD2 | AUTH_BITMASK_NONE
 	response.AuthenticationStatus = AUTH_STATUS_NON_NULL_USER | AUTH_STATUS_NULL_USER
 	response.ExtCapabilities = 0
 	response.OEMAuxiliaryData = 0
@@ -130,34 +160,166 @@ func HandleIPMIAuthenticationCapabilities(addr *net.UDPAddr, server *net.UDPConn
 	dataBuf := bytes.Buffer{}
 	binary.Write(&dataBuf, binary.BigEndian, response)
 
-	responseMessage := IPMIMessage{}
-	responseMessage.TargetAddress = message.SourceAddress
-	remoteLun := message.SourceLun & 0x03
-	localLun := message.TargetLun & 0x03
-	responseMessage.TargetLun = remoteLun | ((IPMI_NETFN_APP | IPMI_NETFN_RESPONSE) << 2)
-	responseMessage.SourceAddress = message.TargetAddress
-	responseMessage.SourceLun = localLun
-	responseMessage.Command = IPMI_CMD_GET_CHANNEL_AUTH_CAPABILITIES
-	responseMessage.CompletionCode = 0
+	responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_APP | IPMI_NETFN_RESPONSE), IPMI_CMD_GET_CHANNEL_AUTH_CAPABILITIES)
 	responseMessage.Data = dataBuf.Bytes()
-
-
-	responseWrapper := IPMISessionWrapper{}
-	responseWrapper.AuthenticationType = wrapper.AuthenticationType
-	responseWrapper.SequenceNumber = 0x00
-	responseWrapper.SessionId = 0x00
-
 	rmcp := BuildUpRMCPForIPMI()
 
+	// serialize and send back
 	obuf := bytes.Buffer{}
 	SerializeRMCP(&obuf, rmcp)
 	SerializeIPMI(&obuf, responseWrapper, responseMessage)
 
-	dumpByteBuffer(obuf)
+	server.WriteToUDP(obuf.Bytes(), addr)
+}
+
+type IPMIGetSessionChallengeRequest struct {
+	AuthenticationType uint8
+	Username [16]byte
+}
+
+type IPMIGetSessionChallengeResponse struct {
+	TempSessionID uint32
+	Challenge [16]byte
+}
+
+func HandleIPMIGetSessionChallenge(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
+	buf := bytes.NewBuffer(message.Data)
+	request := IPMIGetSessionChallengeRequest{}
+	binary.Read(buf, binary.BigEndian, &request)
+
+	obuf := bytes.Buffer{}
+
+	nameLength := len(request.Username)
+	for i := range request.Username {
+		if request.Username[i] == 0 {
+			nameLength = i
+			break
+		}
+	}
+	username := string(request.Username[:nameLength])
+
+	user, found := model.GetBMCUser(username)
+	if ! found {
+		responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_APP | IPMI_NETFN_RESPONSE), IPMI_CMD_GET_SESSION_CHALLENGE)
+		responseMessage.CompletionCode = COMPLETION_CODE_INVALID_USERNAME
+		rmcp := BuildUpRMCPForIPMI()
+
+		SerializeRMCP(&obuf, rmcp)
+		SerializeIPMI(&obuf, responseWrapper, responseMessage)
+	} else {
+		session := model.GetNewSession(user)
+		var challengeCode [16]uint8
+
+		for i := range challengeCode {
+			challengeCode[i] = uint8(rand.Uint32() % 0xff)
+		}
+
+		responseChallenge := IPMIGetSessionChallengeResponse{}
+		responseChallenge.TempSessionID = session.SessionID
+		responseChallenge.Challenge = challengeCode
+		dataBuf := bytes.Buffer{}
+		binary.Write(&dataBuf, binary.BigEndian, responseChallenge)
+
+		responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_APP | IPMI_NETFN_RESPONSE), IPMI_CMD_GET_SESSION_CHALLENGE)
+		responseMessage.Data = dataBuf.Bytes()
+		rmcp := BuildUpRMCPForIPMI()
+
+		SerializeRMCP(&obuf, rmcp)
+		SerializeIPMI(&obuf, responseWrapper, responseMessage)
+	}
 
 	server.WriteToUDP(obuf.Bytes(), addr)
 }
 
+type IPMIActivateSessionRequest struct {
+	AuthenticationType uint8
+	RequestMaxPrivilegeLevel uint8
+	Challenge [16]byte
+	InitialOutboundSeq uint32
+}
+
+type IPMIActivateSessionResponse struct {
+	AuthenticationType uint8
+	SessionId uint32
+	InitialOutboundSeq uint32
+	MaxPrivilegeLevel uint8
+}
+
+func GetAuthenticationCode(authenticationType uint8, password string, sessionID uint32, message IPMIMessage, sessionSeq uint32) [16]byte {
+	var passwordBytes [16]byte
+	copy(passwordBytes[:], password)
+
+	context := bytes.Buffer{}
+	binary.Write(&context, binary.BigEndian, passwordBytes)
+	binary.Write(&context, binary.BigEndian, sessionID)
+	SerializeIPMIMessage(&context, message)
+	binary.Write(&context, binary.BigEndian, sessionSeq)
+	binary.Write(&context, binary.BigEndian, passwordBytes)
+
+	var code [16]byte
+	switch authenticationType {
+	case AUTH_MD5:
+		code = md5.Sum(context.Bytes())
+	case AUTH_MD2:
+		hash := md2.New()
+		md2Code := hash.Sum(context.Bytes())
+		for i := range md2Code {
+			if i >= len(code) {
+				break
+			}
+			code[i] = md2Code[i]
+		}
+	}
+
+	return code
+}
+
+func HandleIPMIActivateSession(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
+	buf := bytes.NewBuffer(message.Data)
+	request := IPMIActivateSessionRequest{}
+	binary.Read(buf, binary.BigEndian, &request)
+
+	//obuf := bytes.Buffer{}
+
+	session, ok := model.GetSession(wrapper.SessionId)
+	if ! ok {
+		log.Printf("Unable to find session 0x%08x\n", wrapper.SessionId)
+	} else {
+		bmcUser := session.User
+		code := GetAuthenticationCode(wrapper.AuthenticationType, bmcUser.Password, wrapper.SessionId, message, wrapper.SequenceNumber)
+		if bytes.Compare(wrapper.AuthenticationCode[:], code[:]) == 0 {
+			log.Println("    IPMI Authentication Pass.")
+		} else {
+			log.Println("    IPMI Authentication Failed.")
+		}
+
+		session.RemoteSessionSequenceNumber = request.InitialOutboundSeq
+		session.LocalSessionSequenceNumber = 0
+
+		response := IPMIActivateSessionResponse{}
+		response.AuthenticationType = request.AuthenticationType
+		response.SessionId = wrapper.SessionId
+		session.LocalSessionSequenceNumber += 1
+		response.InitialOutboundSeq = session.LocalSessionSequenceNumber
+		response.MaxPrivilegeLevel = request.RequestMaxPrivilegeLevel
+
+		dataBuf := bytes.Buffer{}
+		binary.Write(&dataBuf, binary.BigEndian, response)
+
+		responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_APP | IPMI_NETFN_RESPONSE), IPMI_CMD_ACTIVATE_SESSION)
+		responseMessage.Data = dataBuf.Bytes()
+
+		responseWrapper.SessionId = response.SessionId
+		responseWrapper.SequenceNumber = session.RemoteSessionSequenceNumber
+		responseWrapper.AuthenticationCode = GetAuthenticationCode(response.AuthenticationType, bmcUser.Password, response.SessionId, responseMessage, responseWrapper.SequenceNumber)
+		rmcp := BuildUpRMCPForIPMI()
+
+		obuf := bytes.Buffer{}
+		SerializeRMCP(&obuf, rmcp)
+		SerializeIPMI(&obuf, responseWrapper, responseMessage)
+		server.WriteToUDP(obuf.Bytes(), addr)
+	}
+}
 
 func IPMI_APP_DeserializeAndExecute(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
 	switch message.Command {
@@ -208,8 +370,10 @@ func IPMI_APP_DeserializeAndExecute(addr *net.UDPAddr, server *net.UDPConn, wrap
 		HandleIPMIAuthenticationCapabilities(addr, server, wrapper, message)
 	case IPMI_CMD_GET_SESSION_CHALLENGE:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_SESSION_CHALLENGE")
+		HandleIPMIGetSessionChallenge(addr, server, wrapper, message)
 	case IPMI_CMD_ACTIVATE_SESSION:
 		log.Println("      IPMI APP: Command = IPMI_CMD_ACTIVATE_SESSION")
+		HandleIPMIActivateSession(addr, server, wrapper, message)
 	case IPMI_CMD_SET_SESSION_PRIVILEGE:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SET_SESSION_PRIVILEGE")
 	case IPMI_CMD_CLOSE_SESSION:
