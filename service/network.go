@@ -36,7 +36,7 @@ func NetworkServiceRun() {
 	buf := make([]byte, 1024)
 	for {
 		_, addr, _ := server.ReadFromUDP(buf)
-		log.Println("Receive a UDP packet from %s:%d", addr.IP.String(), addr.Port)
+		log.Println("Receive a UDP packet from ", addr.IP.String(), ":", addr.Port)
 
 		bytebuf := bytes.NewBuffer(buf)
 		DeserializeAndExecute(bytebuf, addr, server)

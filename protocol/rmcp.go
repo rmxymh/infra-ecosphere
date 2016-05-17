@@ -46,6 +46,7 @@ func RMCPDeserializeAndExecute(buf io.Reader, addr *net.UDPAddr, server *net.UDP
 		ASFDeserializeAndExecute(buf, addr, server)
 	case RMCP_CLASS_IPMI:
 		log.Println("  RMCP: Class = IPMI")
+		IPMIDeserializeAndExecute(buf, addr, server)
 	case RMCP_CLASS_OEM:
 		log.Println("  RMCP: Class = OEM")
 	}
