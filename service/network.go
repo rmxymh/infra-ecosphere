@@ -6,39 +6,65 @@ import (
 	"net"
 	"bytes"
 	"log"
+	"syscall"
+	"io"
+	"os/signal"
+	"time"
 )
 
 
 import (
 	"github.com/rmxymh/infra-ecosphere/protocol"
-	"io"
+	"github.com/rmxymh/infra-ecosphere/model"
+	"github.com/rmxymh/infra-ecosphere/utils"
 )
 
-func CheckError(err error) {
-	if err != nil {
-		fmt.Println("Error: ", err)
-		os.Exit(-1)
-	}
-}
+var running bool = false
 
 func DeserializeAndExecute(buf io.Reader, addr *net.UDPAddr, server *net.UDPConn) {
 	protocol.RMCPDeserializeAndExecute(buf, addr, server)
 }
 
-func NetworkServiceRun() {
-	serverAddr, err := net.ResolveUDPAddr("udp", "127.0.1.1:623")
-	CheckError(err)
+func IPMIServerHandler(BMCIP string) {
+	addr := fmt.Sprintf("%s:623", BMCIP)
+	serverAddr, err := net.ResolveUDPAddr("udp", addr)
+	utils.CheckError(err)
 
 	server, err := net.ListenUDP("udp", serverAddr)
-	CheckError(err)
+	utils.CheckError(err)
 	defer server.Close()
 
 	buf := make([]byte, 1024)
-	for {
+	for running {
 		_, addr, _ := server.ReadFromUDP(buf)
 		log.Println("Receive a UDP packet from ", addr.IP.String(), ":", addr.Port)
 
 		bytebuf := bytes.NewBuffer(buf)
 		DeserializeAndExecute(bytebuf, addr, server)
 	}
+}
+
+func NetworkServiceRun() {
+	signalChan := make(chan os.Signal, 1)
+	exitChan := make(chan bool, 1)
+	signal.Notify(signalChan, os.Interrupt, syscall.SIGINT)
+	go func() {
+		<- signalChan
+		log.Println("Capture Interrupt from System, terminate this server.")
+		running = false
+		exitChan <- true
+	}()
+
+	running = true
+	for ip, _ := range model.BMCs {
+		go func(ip string) {
+			log.Println("Start BMC Listener for BMC ", ip)
+			IPMIServerHandler(ip)
+			log.Println("BMC Listener ", ip, " is terminated.")
+		}(ip)
+	}
+
+	<- exitChan
+	log.Println("Wait for Listener terminating...")
+	time.Sleep(3 * time.Second)
 }

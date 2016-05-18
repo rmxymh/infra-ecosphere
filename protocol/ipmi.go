@@ -7,6 +7,7 @@ import (
 	"net"
 	"log"
 	"unsafe"
+	"github.com/rmxymh/infra-ecosphere/utils"
 )
 
 // port from OpenIPMI
@@ -169,12 +170,14 @@ func BuildUpRMCPForIPMI() (rmcp RemoteManagementControlProtocol) {
 
 func IPMIDeserializeAndExecute(buf io.Reader, addr *net.UDPAddr, server *net.UDPConn) {
 	_, wrapper, message := DeserializeIPMI(buf)
+	log.Println(utils.GetLocalIP(server))
 
 	netFunction := (message.TargetLun & 0xFC) >> 2;
 
 	switch netFunction {
 	case IPMI_NETFN_CHASSIS:
 		log.Println("    IPMI: NetFunction = CHASSIS")
+		IPMI_CHASSIS_DeserializeAndExecute(addr, server, wrapper, message)
 	case IPMI_NETFN_BRIDGE:
 		log.Println("    IPMI: NetFunction = BRIDGE")
 	case IPMI_NETFN_SENSOR_EVENT:

@@ -130,7 +130,7 @@ func BuildResponseMessageTemplate(requestWrapper IPMISessionWrapper, requestMess
 }
 
 func HandleIPMIUnsupportedAppCommand(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
-	log.Println("      IPMI App: This command is not supported currently.")
+	log.Println("      IPMI App: This command is not supported currently, ignore.")
 }
 
 type IPMIAuthenticationCapabilitiesRequest struct {
@@ -376,6 +376,48 @@ func HandleIPMISetSessionPrivilegeLevel(addr *net.UDPAddr, server *net.UDPConn, 
 	}
 }
 
+type IPMICloseSessionRequest struct {
+	SessionID uint32
+}
+
+func HandleIPMICloseSession(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
+	buf := bytes.NewBuffer(message.Data)
+	request := IPMICloseSessionRequest{}
+	binary.Read(buf, binary.BigEndian, &request)
+
+	//obuf := bytes.Buffer{}
+
+	session, ok := model.GetSession(wrapper.SessionId)
+	if ! ok {
+		log.Printf("Unable to find session 0x%08x\n", wrapper.SessionId)
+	} else {
+		bmcUser := session.User
+		code := GetAuthenticationCode(wrapper.AuthenticationType, bmcUser.Password, wrapper.SessionId, message, wrapper.SequenceNumber)
+		if bytes.Compare(wrapper.AuthenticationCode[:], code[:]) == 0 {
+			log.Println("      IPMI Authentication Pass.")
+		} else {
+			log.Println("      IPMI Authentication Failed.")
+		}
+
+		model.RemoveSession(request.SessionID)
+
+		session.LocalSessionSequenceNumber += 1
+		session.RemoteSessionSequenceNumber += 1
+
+		responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_APP | IPMI_NETFN_RESPONSE), IPMI_CMD_CLOSE_SESSION)
+
+		responseWrapper.SessionId = wrapper.SessionId
+		responseWrapper.SequenceNumber = session.RemoteSessionSequenceNumber
+		responseWrapper.AuthenticationCode = GetAuthenticationCode(wrapper.AuthenticationType, bmcUser.Password, responseWrapper.SessionId, responseMessage, responseWrapper.SequenceNumber)
+		rmcp := BuildUpRMCPForIPMI()
+
+		obuf := bytes.Buffer{}
+		SerializeRMCP(&obuf, rmcp)
+		SerializeIPMI(&obuf, responseWrapper, responseMessage)
+		server.WriteToUDP(obuf.Bytes(), addr)
+	}
+}
+
 func IPMI_APP_DeserializeAndExecute(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
 	switch message.Command {
 	case IPMI_CMD_GET_DEVICE_ID:
@@ -476,8 +518,7 @@ func IPMI_APP_DeserializeAndExecute(addr *net.UDPAddr, server *net.UDPConn, wrap
 		HandleIPMISetSessionPrivilegeLevel(addr, server, wrapper, message)
 	case IPMI_CMD_CLOSE_SESSION:
 		log.Println("      IPMI APP: Command = IPMI_CMD_CLOSE_SESSION")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
-
+		HandleIPMICloseSession(addr, server, wrapper, message)
 	case IPMI_CMD_GET_SESSION_INFO:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_SESSION_INFO")
 		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
