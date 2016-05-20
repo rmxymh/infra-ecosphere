@@ -53,7 +53,7 @@ func (instance *Instance)IsRunning() bool {
 func (instance *Instance)SetBootDevice(dev string) {
 	machine, err := vbox.GetMachine(instance.Name)
 
-	if err {
+	if err != nil {
 		log.Fatalf("    Instance: Failed to set BootDevice to VM %s: %s", instance.Name, err.Error())
 		return
 	}
@@ -72,7 +72,7 @@ func (instance *Instance)SetBootDevice(dev string) {
 func (instance *Instance)PowerOff() {
 	machine, err := vbox.GetMachine(instance.Name)
 
-	if err {
+	if err != nil {
 		log.Fatalf("    Instance: Failed to find VM %s and power off it: %s", instance.Name, err.Error())
 		return
 	}
@@ -91,7 +91,7 @@ func (instance *Instance)PowerOff() {
 func (instance *Instance)PowerOn() {
 	machine, err := vbox.GetMachine(instance.Name)
 
-	if err {
+	if err != nil {
 		log.Fatalf("    Instance: Failed to find VM %s and power on it: %s", instance.Name, err.Error())
 		return
 	}
