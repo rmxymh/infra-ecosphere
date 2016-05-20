@@ -94,8 +94,6 @@ func HandleIPMIGetChassisStatus(addr *net.UDPAddr, server *net.UDPConn, wrapper 
 			session.RemoteSessionSequenceNumber += 1
 
 			response := IPMIGetChassisStatusResponse{}
-			log.Println("IPMI: BMC VM = ", bmc.VM)
-			log.Println("IPMI: BMC = ", bmc)
 			if bmc.VM.IsRunning() {
 				response.CurrentPowerState |= CHASSIS_POWER_STATE_BITMASK_POWER_ON
 			}
@@ -122,6 +120,77 @@ func HandleIPMIGetChassisStatus(addr *net.UDPAddr, server *net.UDPConn, wrapper 
 	}
 }
 
+type IPMIChassisControlRequest struct {
+	ChassisControl uint8
+}
+
+const (
+	CHASSIS_CONTROL_POWER_DOWN =	0x00
+	CHASSIS_CONTROL_POWER_UP =	0x01
+	CHASSIS_CONTROL_POWER_CYCLE =	0x02
+	CHASSIS_CONTROL_HARD_RESET =	0x03
+	CHASSIS_CONTROL_PULSE = 	0x04
+	CHASSIS_CONTROL_POWER_SOFT =	0x05
+)
+
+func HandleIPMIChassisControl(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
+	buf := bytes.NewBuffer(message.Data)
+	request := IPMIChassisControlRequest{}
+	binary.Read(buf, binary.BigEndian, &request)
+
+	session, ok := model.GetSession(wrapper.SessionId)
+	if ! ok {
+		log.Printf("Unable to find session 0x%08x\n", wrapper.SessionId)
+	} else {
+		bmcUser := session.User
+		code := GetAuthenticationCode(wrapper.AuthenticationType, bmcUser.Password, wrapper.SessionId, message, wrapper.SequenceNumber)
+		if bytes.Compare(wrapper.AuthenticationCode[:], code[:]) == 0 {
+			log.Println("      IPMI Authentication Pass.")
+		} else {
+			log.Println("      IPMI Authentication Failed.")
+		}
+
+		localIP := utils.GetLocalIP(server)
+		bmc, ok := model.GetBMC(net.ParseIP(localIP))
+		if ! ok {
+			log.Printf("BMC %s is not found\n", localIP)
+		} else {
+			switch request.ChassisControl {
+			case CHASSIS_CONTROL_POWER_DOWN:
+				bmc.PowerOff()
+			case CHASSIS_CONTROL_POWER_UP:
+				bmc.PowerOn()
+			case CHASSIS_CONTROL_POWER_CYCLE:
+				bmc.PowerOff()
+				bmc.PowerOn()
+			case CHASSIS_CONTROL_HARD_RESET:
+				bmc.PowerOff()
+				bmc.PowerOn()
+			case CHASSIS_CONTROL_PULSE:
+				// do nothing
+			case CHASSIS_CONTROL_POWER_SOFT:
+				bmc.PowerSoft()
+			}
+
+			session.LocalSessionSequenceNumber += 1
+			session.RemoteSessionSequenceNumber += 1
+
+			responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_APP | IPMI_NETFN_RESPONSE), IPMI_CMD_CHASSIS_CONTROL)
+
+			responseWrapper.SessionId = wrapper.SessionId
+			responseWrapper.SequenceNumber = session.RemoteSessionSequenceNumber
+			responseWrapper.AuthenticationCode = GetAuthenticationCode(wrapper.AuthenticationType, bmcUser.Password, responseWrapper.SessionId, responseMessage, responseWrapper.SequenceNumber)
+			rmcp := BuildUpRMCPForIPMI()
+
+			obuf := bytes.Buffer{}
+			SerializeRMCP(&obuf, rmcp)
+			SerializeIPMI(&obuf, responseWrapper, responseMessage)
+			server.WriteToUDP(obuf.Bytes(), addr)
+		}
+	}
+}
+
+
 func IPMI_CHASSIS_DeserializeAndExecute(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
 	switch message.Command {
 	case IPMI_CMD_GET_CHASSIS_CAPABILITIES:
@@ -134,7 +203,7 @@ func IPMI_CHASSIS_DeserializeAndExecute(addr *net.UDPAddr, server *net.UDPConn, 
 
 	case IPMI_CMD_CHASSIS_CONTROL:
 		log.Println("      IPMI CHASSIS: Command = IPMI_CMD_CHASSIS_CONTROL")
-		HandleIPMIUnsupportedChassisCommand(addr, server, wrapper, message)
+		HandleIPMIChassisControl(addr, server, wrapper, message)
 
 	case IPMI_CMD_CHASSIS_RESET:
 		log.Println("      IPMI CHASSIS: Command = IPMI_CMD_CHASSIS_RESET")
