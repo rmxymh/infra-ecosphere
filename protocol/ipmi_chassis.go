@@ -94,8 +94,10 @@ func HandleIPMIGetChassisStatus(addr *net.UDPAddr, server *net.UDPConn, wrapper 
 			session.RemoteSessionSequenceNumber += 1
 
 			response := IPMIGetChassisStatusResponse{}
-			if bmc.PowerOn {
-				response.CurrentPowerState = CHASSIS_POWER_STATE_BITMASK_POWER_ON
+			log.Println("IPMI: BMC VM = ", bmc.VM)
+			log.Println("IPMI: BMC = ", bmc)
+			if bmc.VM.IsRunning() {
+				response.CurrentPowerState |= CHASSIS_POWER_STATE_BITMASK_POWER_ON
 			}
 			response.LastPowerEvent = 0
 			response.MiscChassisState = 0
