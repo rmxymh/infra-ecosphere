@@ -17,17 +17,16 @@ func init() {
 	BMCs = make(map[string]BMC)
 }
 
-func AddBMC(ip net.IP) {
+func AddBMC(ip net.IP, instance Instance) BMC {
 	newBMC := BMC{
 		Addr: ip,
+		VM: instance,
 	}
 
 	BMCs[ip.String()] = newBMC
 	log.Println("Add new BMC with IP ", ip.String())
-}
 
-func SaveBMC(bmc BMC) {
-	BMCs[bmc.Addr.String()] = bmc
+	return newBMC
 }
 
 func RemoveBMC(ip net.IP) {
@@ -44,10 +43,44 @@ func GetBMC(ip net.IP) (BMC, bool) {
 	return obj, ok
 }
 
-func BindInstance(ip net.IP, instance Instance) {
-	bmc, ok := BMCs[ip.String()]
-	if ok {
-		bmc.VM = instance
-		SaveBMC(bmc)
+func (bmc *BMC)SetBootDev(dev string) {
+	// TODO
+}
+
+func (bmc *BMC)PowerOn() {
+	if ! bmc.VM.IsRunning() {
+		bmc.VM.PowerOn()
 	}
 }
+
+func (bmc *BMC)PowerOff() {
+	if bmc.VM.IsRunning() {
+		bmc.VM.PowerOff()
+	}
+}
+
+func (bmc *BMC)PowerSoft() {
+	if bmc.VM.IsRunning() {
+		bmc.VM.ACPIOff()
+	}
+}
+
+func (bmc *BMC)PowerReset() {
+	/* VBox Limitation:
+	 *   Because it is not allowed to modify VM properties when VM is running,
+  	 *   SetBootDevice does not have any effect in reset. In other words, we
+ 	 *   need to use this way to simulate power reset to make Set Boot Device
+ 	 *   working normally.
+  	 */
+
+	if bmc.VM.IsRunning() {
+		bmc.VM.PowerOff()
+		bmc.VM.PowerOn()
+	}
+}
+
+func (bmc *BMC)IsPowerOn() bool {
+	return bmc.VM.IsRunning()
+}
+
+

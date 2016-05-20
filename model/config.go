@@ -38,17 +38,8 @@ func LoadConfig(configFile string) {
 
 	// initialize BMCs and Instances
 	for _, node := range configuration.Nodes {
-		AddBMC(net.ParseIP(node.BMCIP))
-		AddInstnace(node.VMName)
-
-		instance, ok := GetInstance(node.VMName)
-		if ok {
-			BindInstance(net.ParseIP(node.BMCIP), instance)
-			log.Printf("Config: Bind BMC %s onto Instance %s", node.BMCIP, instance.Name)
-		} else {
-			log.Fatalf("Config: Failed to bind BMC %s to Instance %s", node.BMCIP, node.VMName)
-		}
-
+		instance := AddInstnace(node.VMName)
+		AddBMC(net.ParseIP(node.BMCIP), instance)
 	}
 
 	for _, user := range configuration.BMCUsers {

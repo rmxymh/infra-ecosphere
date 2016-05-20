@@ -20,12 +20,14 @@ func init() {
 	instances = make(map[string]Instance)
 }
 
-func AddInstnace(name string) {
+func AddInstnace(name string) Instance {
 	newInstance := Instance {
 		Name: name,
 	}
 	instances[name] = newInstance
 	log.Println("Add instance ", name)
+
+	return newInstance
 }
 
 func DeleteInstance(name string) {
@@ -77,6 +79,24 @@ func (instance *Instance)PowerOff() {
 		return
 	}
 
+	machine.Poweroff()
+
+	if instance.needToRestoreBootOrder {
+		machine.BootOrder = instance.lastBootOrder
+		machine.Modify()
+		instance.lastBootOrder = make([]string, 4)
+		instance.needToRestoreBootOrder = false
+	}
+}
+
+func (instance *Instance)ACPIOff() {
+	machine, err := vbox.GetMachine(instance.Name)
+
+	if err != nil {
+		log.Fatalf("    Instance: Failed to find VM %s and power off it: %s", instance.Name, err.Error())
+		return
+	}
+
 	machine.Stop()
 
 	if instance.needToRestoreBootOrder {
@@ -85,7 +105,6 @@ func (instance *Instance)PowerOff() {
 		instance.lastBootOrder = make([]string, 4)
 		instance.needToRestoreBootOrder = false
 	}
-
 }
 
 func (instance *Instance)PowerOn() {
@@ -106,4 +125,15 @@ func (instance *Instance)PowerOn() {
 	}
 
 	machine.Start()
+}
+
+func (instance *Instance)Reset() {
+	machine, err := vbox.GetMachine(instance.Name)
+
+	if err != nil {
+		log.Fatalf("    Instance: Failed to find VM %s and power on it: %s", instance.Name, err.Error())
+		return
+	}
+
+	machine.Reset()
 }
