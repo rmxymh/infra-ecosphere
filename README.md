@@ -68,7 +68,7 @@ The format is as the following, and if you want more detailed information about 
 	],
 	"BMCUsers": [
 		{
-			"Username": <BMC Username>
+			"Username": <BMC Username>,
 			"Password": <BMC Password>
 		}
 	]
