@@ -227,7 +227,7 @@ func IPMI_CHASSIS_DeserializeAndExecute(addr *net.UDPAddr, server *net.UDPConn, 
 
 	case IPMI_CMD_SET_SYSTEM_BOOT_OPTIONS:
 		log.Println("      IPMI CHASSIS: Command = IPMI_CMD_SET_SYSTEM_BOOT_OPTIONS")
-		HandleIPMIUnsupportedChassisCommand(addr, server, wrapper, message)
+		IPMI_CHASSIS_SetBootOption_DeserializeAndExecute(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_SYSTEM_BOOT_OPTIONS:
 		log.Println("      IPMI CHASSIS: Command = IPMI_CMD_GET_SYSTEM_BOOT_OPTIONS")

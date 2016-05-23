@@ -7,7 +7,6 @@ import (
 	"net"
 	"log"
 	"unsafe"
-	"github.com/rmxymh/infra-ecosphere/utils"
 )
 
 // port from OpenIPMI
@@ -170,7 +169,6 @@ func BuildUpRMCPForIPMI() (rmcp RemoteManagementControlProtocol) {
 
 func IPMIDeserializeAndExecute(buf io.Reader, addr *net.UDPAddr, server *net.UDPConn) {
 	_, wrapper, message := DeserializeIPMI(buf)
-	log.Println(utils.GetLocalIP(server))
 
 	netFunction := (message.TargetLun & 0xFC) >> 2;
 
