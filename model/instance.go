@@ -5,6 +5,13 @@ import (
 	vbox "github.com/rmxymh/go-virtualbox"
 )
 
+const (
+	BOOT_DEVICE_PXE =	"net"
+	BOOT_DEVICE_DISK =	"disk"
+	BOOT_DEVICE_CD_DVD =	"dvd"
+	BOOT_DEVICE_FLOPPY =	"floppy"
+)
+
 type Instance struct {
 	Name string
 
@@ -121,6 +128,7 @@ func (instance *Instance)PowerOn() {
 		machine.Modify()
 		instance.nextBootOrder = make([]string, 4)
 		instance.changeBootOrder = false
+		log.Println("Current Boot Order = ", machine.BootOrder)
 		instance.needToRestoreBootOrder = true
 	}
 

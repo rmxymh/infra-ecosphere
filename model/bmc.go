@@ -43,17 +43,40 @@ func GetBMC(ip net.IP) (BMC, bool) {
 	return obj, ok
 }
 
+func (bmc *BMC)Save() {
+	if bmc != nil {
+		BMCs[bmc.Addr.String()] = *bmc
+	}
+}
+
 func (bmc *BMC)SetBootDev(dev string) {
-	// TODO
+	switch dev {
+	case BOOT_DEVICE_PXE:
+		fallthrough
+	case BOOT_DEVICE_DISK:
+		fallthrough
+	case BOOT_DEVICE_CD_DVD:
+		bmc.VM.SetBootDevice(dev)
+		bmc.Save()
+		log.Println("BMC ", bmc.Addr.String(), " changes its boot device as ", dev)
+	case BOOT_DEVICE_FLOPPY:
+		log.Println("Device Floppy is not supported.")
+	default:
+		log.Println("Set Boot Device: ", dev, " is not supported.")
+	}
+
+	log.Println(bmc.VM)
 }
 
 func (bmc *BMC)PowerOn() {
+	log.Println(bmc.VM)
 	if ! bmc.VM.IsRunning() {
 		bmc.VM.PowerOn()
 	}
 }
 
 func (bmc *BMC)PowerOff() {
+	log.Println(bmc.VM)
 	if bmc.VM.IsRunning() {
 		bmc.VM.PowerOff()
 	}
