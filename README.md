@@ -126,6 +126,22 @@ After the program is running, you can use IPMI related utilities, such as ipmito
 $ ipmitool -U admin -P admin -H 127.0.1.1 chassis power status
 ```
 
+
+## Note
+
+### IPMI Package Libraries
+
+If you want to leverage packet deserialize function of ipmi package, you can use the following three function to register your callback:
+
+```go
+func IPMI_APP_SetHandler(command int, handler IPMI_App_Handler)
+func IPMI_CHASSIS_SetHandler(command int, handler IPMI_Chassis_Handler)
+func IPMI_CHASSIS_BOOT_OPTION_SetHandler(command int, handler IPMI_Chassis_BootOpt_Handler)
+```
+
+More detail information can be found at func init() in ipmi_app.go, ipmi_chassis.go, and ipmi_chassis_bootopt.go. For the remaining commands, they may be supported in the future. Besides, if you implement them and have willing to contribute, welcome to make pull request, and we will appreciate your great contributions.
+
+
 ## TODO
 
 * Separate IPMI packet management as a library so that every one can use it with callback functions.
@@ -138,4 +154,4 @@ $ ipmitool -U admin -P admin -H 127.0.1.1 chassis power status
 
 This source code are, unless otherwise specified, distributed under the terms of the MIT License.
 
-Copyright (c) 2016 Yu-Ming Huang <rmx.z91@gmail.com>
+Copyright (c) 2016 Yu-Ming Huang < rmx.z91@gmail.com >
