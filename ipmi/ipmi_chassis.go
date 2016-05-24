@@ -1,10 +1,10 @@
-package protocol
+package ipmi
 
 import (
 	"net"
 	"log"
 	"bytes"
-	"github.com/rmxymh/infra-ecosphere/model"
+	"github.com/rmxymh/infra-ecosphere/bmc"
 	"github.com/rmxymh/infra-ecosphere/utils"
 	"encoding/binary"
 )
@@ -73,7 +73,7 @@ const (
 )
 
 func HandleIPMIGetChassisStatus(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
-	session, ok := model.GetSession(wrapper.SessionId)
+	session, ok := GetSession(wrapper.SessionId)
 	if ! ok {
 		log.Printf("Unable to find session 0x%08x\n", wrapper.SessionId)
 	} else {
@@ -86,7 +86,7 @@ func HandleIPMIGetChassisStatus(addr *net.UDPAddr, server *net.UDPConn, wrapper 
 		}
 
 		localIP := utils.GetLocalIP(server)
-		bmc, ok := model.GetBMC(net.ParseIP(localIP))
+		bmc, ok := bmc.GetBMC(net.ParseIP(localIP))
 		if ! ok {
 			log.Printf("BMC %s is not found\n", localIP)
 		} else {
@@ -138,7 +138,7 @@ func HandleIPMIChassisControl(addr *net.UDPAddr, server *net.UDPConn, wrapper IP
 	request := IPMIChassisControlRequest{}
 	binary.Read(buf, binary.BigEndian, &request)
 
-	session, ok := model.GetSession(wrapper.SessionId)
+	session, ok := GetSession(wrapper.SessionId)
 	if ! ok {
 		log.Printf("Unable to find session 0x%08x\n", wrapper.SessionId)
 	} else {
@@ -151,7 +151,7 @@ func HandleIPMIChassisControl(addr *net.UDPAddr, server *net.UDPConn, wrapper IP
 		}
 
 		localIP := utils.GetLocalIP(server)
-		bmc, ok := model.GetBMC(net.ParseIP(localIP))
+		bmc, ok := bmc.GetBMC(net.ParseIP(localIP))
 		if ! ok {
 			log.Printf("BMC %s is not found\n", localIP)
 		} else {

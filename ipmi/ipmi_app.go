@@ -1,4 +1,4 @@
-package protocol
+package ipmi
 
 import (
 	"net"
@@ -6,11 +6,13 @@ import (
 	"log"
 	"encoding/binary"
 	"fmt"
-	"github.com/rmxymh/infra-ecosphere/model"
 	"math/rand"
 	"crypto/md5"
+)
 
+import (
 	"github.com/htruong/go-md2"
+	"github.com/rmxymh/infra-ecosphere/bmc"
 )
 
 // port from OpenIPMI
@@ -202,7 +204,7 @@ func HandleIPMIGetSessionChallenge(addr *net.UDPAddr, server *net.UDPConn, wrapp
 	}
 	username := string(request.Username[:nameLength])
 
-	user, found := model.GetBMCUser(username)
+	user, found := bmc.GetBMCUser(username)
 	if ! found {
 		responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_APP | IPMI_NETFN_RESPONSE), IPMI_CMD_GET_SESSION_CHALLENGE)
 		responseMessage.CompletionCode = COMPLETION_CODE_INVALID_USERNAME
@@ -211,7 +213,7 @@ func HandleIPMIGetSessionChallenge(addr *net.UDPAddr, server *net.UDPConn, wrapp
 		SerializeRMCP(&obuf, rmcp)
 		SerializeIPMI(&obuf, responseWrapper, responseMessage)
 	} else {
-		session := model.GetNewSession(user)
+		session := GetNewSession(user)
 		var challengeCode [16]uint8
 
 		for i := range challengeCode {
@@ -285,7 +287,7 @@ func HandleIPMIActivateSession(addr *net.UDPAddr, server *net.UDPConn, wrapper I
 
 	//obuf := bytes.Buffer{}
 
-	session, ok := model.GetSession(wrapper.SessionId)
+	session, ok := GetSession(wrapper.SessionId)
 	if ! ok {
 		log.Printf("Unable to find session 0x%08x\n", wrapper.SessionId)
 	} else {
@@ -340,7 +342,7 @@ func HandleIPMISetSessionPrivilegeLevel(addr *net.UDPAddr, server *net.UDPConn, 
 
 	//obuf := bytes.Buffer{}
 
-	session, ok := model.GetSession(wrapper.SessionId)
+	session, ok := GetSession(wrapper.SessionId)
 	if ! ok {
 		log.Printf("Unable to find session 0x%08x\n", wrapper.SessionId)
 	} else {
@@ -387,7 +389,7 @@ func HandleIPMICloseSession(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMI
 
 	//obuf := bytes.Buffer{}
 
-	session, ok := model.GetSession(wrapper.SessionId)
+	session, ok := GetSession(wrapper.SessionId)
 	if ! ok {
 		log.Printf("Unable to find session 0x%08x\n", wrapper.SessionId)
 	} else {
@@ -399,7 +401,7 @@ func HandleIPMICloseSession(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMI
 			log.Println("      IPMI Authentication Failed.")
 		}
 
-		model.RemoveSession(request.SessionID)
+		RemoveSession(request.SessionID)
 
 		session.LocalSessionSequenceNumber += 1
 		session.RemoteSessionSequenceNumber += 1

@@ -1,16 +1,17 @@
-package protocol
+package ipmi
 
 import (
 	"net"
 	"bytes"
 	"encoding/binary"
 	"log"
-	"github.com/rmxymh/infra-ecosphere/model"
+	"github.com/rmxymh/infra-ecosphere/bmc"
 	"github.com/rmxymh/infra-ecosphere/utils"
+	"github.com/rmxymh/infra-ecosphere/vm"
 )
 
 func SendIPMIChassisSetBootOptionResponseBack(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
-	session, ok := model.GetSession(wrapper.SessionId)
+	session, ok := GetSession(wrapper.SessionId)
 	if ! ok {
 		log.Printf("        IPMI CHASSIS SET BOOT OPTION: Unable to find session 0x%08x\n", wrapper.SessionId)
 	} else {
@@ -219,7 +220,7 @@ type IPMIChassisBootOptionBootFlags struct {
 
 func HandleIPMIChassisBootOptionBootFlags(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage, selector IPMIChassisBootOptionParameterSelector) {
 	localIP := utils.GetLocalIP(server)
-	bmc, ok := model.GetBMC(net.ParseIP(localIP))
+	bmc, ok := bmc.GetBMC(net.ParseIP(localIP))
 	if ! ok {
 		log.Println("        IPMI CHASSIS BOOT DEVICE: BMC", localIP, " is not found, skip this request.")
 		return
@@ -264,17 +265,17 @@ func HandleIPMIChassisBootOptionBootFlags(addr *net.UDPAddr, server *net.UDPConn
 	switch device {
 	case BOOT_DEVICE_FORCE_PXE:
 		log.Println("        IPMI CHASSIS BOOT DEVICE: BOOT_DEVICE_FORCE_PXE")
-		bmc.SetBootDev(model.BOOT_DEVICE_PXE)
+		bmc.SetBootDev(vm.BOOT_DEVICE_PXE)
 	case BOOT_DEVICE_FORCE_HDD:
 		log.Println("        IPMI CHASSIS BOOT DEVICE: BOOT_DEVICE_FORCE_HDD")
-		bmc.SetBootDev(model.BOOT_DEVICE_DISK)
+		bmc.SetBootDev(vm.BOOT_DEVICE_DISK)
 	case BOOT_DEVICE_FORCE_HDD_SAFE:
 		log.Println("        IPMI CHASSIS BOOT DEVICE: BOOT_DEVICE_FORCE_HDD_SAFE")
 	case BOOT_DEVICE_FORCE_DIAG_PARTITION:
 		log.Println("        IPMI CHASSIS BOOT DEVICE: BOOT_DEVICE_FORCE_DIAG_PARTITION")
 	case BOOT_DEVICE_FORCE_CD:
 		log.Println("        IPMI CHASSIS BOOT DEVICE: BOOT_DEVICE_FORCE_CD")
-		bmc.SetBootDev(model.BOOT_DEVICE_CD_DVD)
+		bmc.SetBootDev(vm.BOOT_DEVICE_CD_DVD)
 	case BOOT_DEVICE_FORCE_BIOS:
 		log.Println("        IPMI CHASSIS BOOT DEVICE: BOOT_DEVICE_FORCE_BIOS")
 	case BOOT_DEVICE_FORCE_REMOTE_FLOPPY:

@@ -1,4 +1,4 @@
-package protocol
+package ipmi
 
 import (
 	"encoding/binary"

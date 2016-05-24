@@ -1,4 +1,4 @@
-package service
+package ipmi
 
 import (
 	"fmt"
@@ -14,15 +14,14 @@ import (
 
 
 import (
-	"github.com/rmxymh/infra-ecosphere/protocol"
-	"github.com/rmxymh/infra-ecosphere/model"
+	"github.com/rmxymh/infra-ecosphere/bmc"
 	"github.com/rmxymh/infra-ecosphere/utils"
 )
 
 var running bool = false
 
 func DeserializeAndExecute(buf io.Reader, addr *net.UDPAddr, server *net.UDPConn) {
-	protocol.RMCPDeserializeAndExecute(buf, addr, server)
+	RMCPDeserializeAndExecute(buf, addr, server)
 }
 
 func IPMIServerHandler(BMCIP string) {
@@ -56,7 +55,7 @@ func IPMIServerServiceRun() {
 	}()
 
 	running = true
-	for ip, _ := range model.BMCs {
+	for ip, _ := range bmc.BMCs {
 		go func(ip string) {
 			log.Println("Start BMC Listener for BMC ", ip)
 			IPMIServerHandler(ip)

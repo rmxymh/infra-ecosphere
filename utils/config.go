@@ -1,10 +1,12 @@
-package model
+package utils
 
 import (
 	"os"
 	"encoding/json"
 	"log"
 	"net"
+	"github.com/rmxymh/infra-ecosphere/vm"
+	"github.com/rmxymh/infra-ecosphere/bmc"
 )
 
 type ConfigNode struct {
@@ -38,12 +40,12 @@ func LoadConfig(configFile string) {
 
 	// initialize BMCs and Instances
 	for _, node := range configuration.Nodes {
-		instance := AddInstnace(node.VMName)
-		AddBMC(net.ParseIP(node.BMCIP), instance)
+		instance := vm.AddInstnace(node.VMName)
+		bmc.AddBMC(net.ParseIP(node.BMCIP), instance)
 	}
 
 	for _, user := range configuration.BMCUsers {
 		log.Printf("Config: Add BMC User %s\n", user.Username)
-		AddBMCUser(user.Username, user.Password)
+		bmc.AddBMCUser(user.Username, user.Password)
 	}
 }

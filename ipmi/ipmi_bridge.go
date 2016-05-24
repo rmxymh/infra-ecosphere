@@ -1,4 +1,4 @@
-package protocol
+package ipmi
 
 // port from OpenIPMI
 // Bridge Network Function

@@ -1,16 +1,11 @@
 package main
 
 import (
-	"github.com/rmxymh/infra-ecosphere/service"
-	"github.com/rmxymh/infra-ecosphere/model"
+	"github.com/rmxymh/infra-ecosphere/ipmi"
+	"github.com/rmxymh/infra-ecosphere/utils"
 )
 
 func main() {
-	// make default data
-	//model.AddBMCUser("admin", "admin")
-	//model.AddBMC(net.ParseIP("127.0.1.1"))
-	//model.AddBMC(net.ParseIP("127.0.1.2"))
-	model.LoadConfig("infra-ecosphere.cfg")
-
-	service.IPMIServerServiceRun()
+	utils.LoadConfig("infra-ecosphere.cfg")
+	ipmi.IPMIServerServiceRun()
 }

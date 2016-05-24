@@ -1,15 +1,18 @@
-package model
+package ipmi
 
 import (
 	"math/rand"
 	"log"
+)
+import (
+	"github.com/rmxymh/infra-ecosphere/bmc"
 )
 
 type IPMISession struct {
 	SessionID uint32
 	RemoteSessionSequenceNumber uint32
 	LocalSessionSequenceNumber uint32
-	User BMCUser
+	User bmc.BMCUser
 }
 
 var ipmiSessions map[uint32]IPMISession
@@ -19,7 +22,7 @@ func init() {
 	ipmiSessions = make(map[uint32]IPMISession)
 }
 
-func GetNewSession(user BMCUser) IPMISession {
+func GetNewSession(user bmc.BMCUser) IPMISession {
 	sessionId := rand.Uint32()
 	for {
 		if _, ok := ipmiSessions[sessionId]; ok {

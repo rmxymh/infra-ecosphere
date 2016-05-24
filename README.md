@@ -40,6 +40,7 @@ $ cd infra-ecoshphere
 * Prepare for dependencies
 ```sh
 $ go get github.com/rmxymh/go-virtualbox
+$ go get github.com/htruong/go-md2
 ```
 
 * Build
@@ -56,7 +57,7 @@ Config file is written in json format and it describes the following:
 * The relationship between BMC IP address and Oracle VirtualBox VM name
 * BMC Account
 
-The format is as the following, and if you want more detailed information about it, you can refer to "Configuration" in model/config.go, where the structure that stores the configuration:
+The format is as the following, and if you want more detailed information about it, you can refer to "Configuration" in utils/config.go, where the structure that stores the configuration:
 
 ```json
 {
@@ -127,9 +128,14 @@ $ ipmitool -U admin -P admin -H 127.0.1.1 chassis power status
 
 ## TODO
 
-* Refine the overall project structure.
 * Separate IPMI packet management as a library so that every one can use it with callback functions.
 * Find a way to make local VM can touch IPMI server in the host machine.
     * Tunnel (Evaluating)
     * Expose BMC operations as a Web Service, and local VM can intercept IPMI packets and convert them into the corresponding API calls. (Evaluating)
+* Test cases
 
+## License
+
+This source code are, unless otherwise specified, distributed under the terms of the MIT License.
+
+Copyright (c) 2016 Yu-Ming Huang <rmx.z91@gmail.com>

@@ -1,13 +1,14 @@
-package model
+package bmc
 
 import (
 	"net"
 	"log"
+	"github.com/rmxymh/infra-ecosphere/vm"
 )
 
 type BMC struct {
 	Addr net.IP
-	VM Instance
+	VM vm.Instance
 }
 
 var BMCs map[string]BMC
@@ -17,7 +18,7 @@ func init() {
 	BMCs = make(map[string]BMC)
 }
 
-func AddBMC(ip net.IP, instance Instance) BMC {
+func AddBMC(ip net.IP, instance vm.Instance) BMC {
 	newBMC := BMC{
 		Addr: ip,
 		VM: instance,
@@ -51,15 +52,15 @@ func (bmc *BMC)Save() {
 
 func (bmc *BMC)SetBootDev(dev string) {
 	switch dev {
-	case BOOT_DEVICE_PXE:
+	case vm.BOOT_DEVICE_PXE:
 		fallthrough
-	case BOOT_DEVICE_DISK:
+	case vm.BOOT_DEVICE_DISK:
 		fallthrough
-	case BOOT_DEVICE_CD_DVD:
+	case vm.BOOT_DEVICE_CD_DVD:
 		bmc.VM.SetBootDevice(dev)
 		bmc.Save()
 		log.Println("BMC ", bmc.Addr.String(), " changes its boot device as ", dev)
-	case BOOT_DEVICE_FLOPPY:
+	case vm.BOOT_DEVICE_FLOPPY:
 		log.Println("Device Floppy is not supported.")
 	default:
 		log.Println("Set Boot Device: ", dev, " is not supported.")
