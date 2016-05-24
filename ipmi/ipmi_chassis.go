@@ -9,7 +9,6 @@ import (
 	"encoding/binary"
 )
 
-// port from OpenIPMI
 // Chassis Network Function
 const (
 	IPMI_CMD_GET_CHASSIS_CAPABILITIES =	0x00
@@ -25,6 +24,74 @@ const (
 	IPMI_CMD_GET_POH_COUNTER =		0x0f
 )
 
+type IPMI_Chassis_Handler func(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage)
+
+type IPMIChassisHandlerSet struct {
+	GetChassisCapabilities	IPMI_Chassis_Handler
+	GetChassisStatus	IPMI_Chassis_Handler
+	ChassisControl		IPMI_Chassis_Handler
+	ChassisReset		IPMI_Chassis_Handler
+	ChassisIdentify		IPMI_Chassis_Handler
+	SetChassisCapabilities	IPMI_Chassis_Handler
+	SetPowerRestorePolicy	IPMI_Chassis_Handler
+	GetSystemRestartCause	IPMI_Chassis_Handler
+	SetSystemBootOptions	IPMI_Chassis_Handler
+	GetSystemBootOptions	IPMI_Chassis_Handler
+	GetPOHCounter		IPMI_Chassis_Handler
+	Unsupported		IPMI_Chassis_Handler
+}
+
+var IPMIChassisHandler IPMIChassisHandlerSet = IPMIChassisHandlerSet{}
+
+func IPMI_CHASSIS_SetHandler(command int, handler IPMI_Chassis_Handler) {
+	switch command {
+	case IPMI_CMD_GET_CHASSIS_CAPABILITIES:
+		IPMIChassisHandler.GetChassisCapabilities = handler
+	case IPMI_CMD_GET_CHASSIS_STATUS:
+		IPMIChassisHandler.GetChassisStatus = handler
+	case IPMI_CMD_CHASSIS_CONTROL:
+		IPMIChassisHandler.ChassisControl = handler
+	case IPMI_CMD_CHASSIS_RESET:
+		IPMIChassisHandler.ChassisReset = handler
+	case IPMI_CMD_CHASSIS_IDENTIFY:
+		IPMIChassisHandler.ChassisIdentify = handler
+	case IPMI_CMD_SET_CHASSIS_CAPABILITIES:
+		IPMIChassisHandler.SetChassisCapabilities = handler
+	case IPMI_CMD_SET_POWER_RESTORE_POLICY:
+		IPMIChassisHandler.SetPowerRestorePolicy = handler
+	case IPMI_CMD_GET_SYSTEM_RESTART_CAUSE:
+		IPMIChassisHandler.GetSystemRestartCause = handler
+	case IPMI_CMD_SET_SYSTEM_BOOT_OPTIONS:
+		IPMIChassisHandler.SetSystemBootOptions = handler
+	case IPMI_CMD_GET_SYSTEM_BOOT_OPTIONS:
+		IPMIChassisHandler.GetSystemBootOptions = handler
+	case IPMI_CMD_GET_POH_COUNTER:
+		IPMIChassisHandler.GetPOHCounter = handler
+	}
+}
+
+func init() {
+	IPMIChassisHandler.Unsupported = HandleIPMIUnsupportedChassisCommand
+
+	IPMI_CHASSIS_SetHandler(IPMI_CMD_GET_CHASSIS_STATUS, HandleIPMIGetChassisStatus)
+	IPMI_CHASSIS_SetHandler(IPMI_CMD_CHASSIS_CONTROL, HandleIPMIChassisControl)
+	IPMI_CHASSIS_SetHandler(IPMI_CMD_SET_SYSTEM_BOOT_OPTIONS, IPMI_CHASSIS_SetBootOption_DeserializeAndExecute)
+
+	IPMI_CHASSIS_SetHandler(IPMI_CMD_GET_CHASSIS_CAPABILITIES, HandleIPMIUnsupportedChassisCommand)
+	IPMI_CHASSIS_SetHandler(IPMI_CMD_CHASSIS_RESET, HandleIPMIUnsupportedChassisCommand)
+	IPMI_CHASSIS_SetHandler(IPMI_CMD_CHASSIS_IDENTIFY, HandleIPMIUnsupportedChassisCommand)
+	IPMI_CHASSIS_SetHandler(IPMI_CMD_SET_CHASSIS_CAPABILITIES, HandleIPMIUnsupportedChassisCommand)
+	IPMI_CHASSIS_SetHandler(IPMI_CMD_SET_POWER_RESTORE_POLICY, HandleIPMIUnsupportedChassisCommand)
+	IPMI_CHASSIS_SetHandler(IPMI_CMD_GET_SYSTEM_RESTART_CAUSE, HandleIPMIUnsupportedChassisCommand)
+	IPMI_CHASSIS_SetHandler(IPMI_CMD_GET_POH_COUNTER, HandleIPMIUnsupportedChassisCommand)
+}
+
+
+
+
+
+
+// Default Handler Implementation
 func HandleIPMIUnsupportedChassisCommand(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
 	log.Println("      IPMI App: This command is not supported currently, ignore.")
 }
@@ -195,47 +262,48 @@ func IPMI_CHASSIS_DeserializeAndExecute(addr *net.UDPAddr, server *net.UDPConn, 
 	switch message.Command {
 	case IPMI_CMD_GET_CHASSIS_CAPABILITIES:
 		log.Println("      IPMI CHASSIS: Command = IPMI_CMD_GET_CHASSIS_CAPABILITIES")
-		HandleIPMIUnsupportedChassisCommand(addr, server, wrapper, message)
+		IPMIChassisHandler.GetChassisCapabilities(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_CHASSIS_STATUS:
 		log.Println("      IPMI CHASSIS: Command = IPMI_CMD_GET_CHASSIS_STATUS")
-		HandleIPMIGetChassisStatus(addr, server, wrapper, message)
+		IPMIChassisHandler.GetChassisStatus(addr, server, wrapper, message)
 
 	case IPMI_CMD_CHASSIS_CONTROL:
 		log.Println("      IPMI CHASSIS: Command = IPMI_CMD_CHASSIS_CONTROL")
-		HandleIPMIChassisControl(addr, server, wrapper, message)
+		IPMIChassisHandler.ChassisControl(addr, server, wrapper, message)
 
 	case IPMI_CMD_CHASSIS_RESET:
 		log.Println("      IPMI CHASSIS: Command = IPMI_CMD_CHASSIS_RESET")
-		HandleIPMIUnsupportedChassisCommand(addr, server, wrapper, message)
+		IPMIChassisHandler.ChassisReset(addr, server, wrapper, message)
 
 	case IPMI_CMD_CHASSIS_IDENTIFY:
 		log.Println("      IPMI CHASSIS: Command = IPMI_CMD_CHASSIS_IDENTIFY")
-		HandleIPMIUnsupportedChassisCommand(addr, server, wrapper, message)
+		IPMIChassisHandler.ChassisIdentify(addr, server, wrapper, message)
 
 	case IPMI_CMD_SET_CHASSIS_CAPABILITIES:
 		log.Println("      IPMI CHASSIS: Command = IPMI_CMD_SET_CHASSIS_CAPABILITIES")
-		HandleIPMIUnsupportedChassisCommand(addr, server, wrapper, message)
+		IPMIChassisHandler.SetChassisCapabilities(addr, server, wrapper, message)
 
 	case IPMI_CMD_SET_POWER_RESTORE_POLICY:
 		log.Println("      IPMI CHASSIS: Command = IPMI_CMD_SET_POWER_RESTORE_POLICY")
-		HandleIPMIUnsupportedChassisCommand(addr, server, wrapper, message)
+		IPMIChassisHandler.SetPowerRestorePolicy(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_SYSTEM_RESTART_CAUSE:
 		log.Println("      IPMI CHASSIS: Command = IPMI_CMD_GET_SYSTEM_RESTART_CAUSE")
-		HandleIPMIUnsupportedChassisCommand(addr, server, wrapper, message)
+		IPMIChassisHandler.GetSystemRestartCause(addr, server, wrapper, message)
 
 	case IPMI_CMD_SET_SYSTEM_BOOT_OPTIONS:
 		log.Println("      IPMI CHASSIS: Command = IPMI_CMD_SET_SYSTEM_BOOT_OPTIONS")
-		IPMI_CHASSIS_SetBootOption_DeserializeAndExecute(addr, server, wrapper, message)
+		IPMIChassisHandler.SetSystemBootOptions(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_SYSTEM_BOOT_OPTIONS:
 		log.Println("      IPMI CHASSIS: Command = IPMI_CMD_GET_SYSTEM_BOOT_OPTIONS")
-		HandleIPMIUnsupportedChassisCommand(addr, server, wrapper, message)
+		IPMIChassisHandler.GetSystemBootOptions(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_POH_COUNTER:
 		log.Println("      IPMI CHASSIS: Command = IPMI_CMD_GET_POH_COUNTER")
-		HandleIPMIUnsupportedChassisCommand(addr, server, wrapper, message)
+		IPMIChassisHandler.GetPOHCounter(addr, server, wrapper, message)
 
 	}
 }
+

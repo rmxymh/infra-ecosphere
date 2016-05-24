@@ -74,6 +74,234 @@ const (
 	IPMI_CMD_GET_SYSTEM_INTERFACE_CAPABILITIES = 	0x57
 )
 
+type IPMI_App_Handler func(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage)
+
+type IPMIAppHandlerSet struct {
+	GetDeviceIDHandler			IPMI_App_Handler
+	BroadcastGetDeviceIDHandler		IPMI_App_Handler
+	ColdResetHandler			IPMI_App_Handler
+	WarmResetHandler			IPMI_App_Handler
+	GetSelfTestResultHandler		IPMI_App_Handler
+	ManufacturingTestOnHandler		IPMI_App_Handler
+	SetACPIPowerStateHandler		IPMI_App_Handler
+	GetACPIPowerStateHandler		IPMI_App_Handler
+	GetDeviceGUIDHandler			IPMI_App_Handler
+	ResetWatchdogTimerHandler		IPMI_App_Handler
+	SetWatchdogTimerHandler			IPMI_App_Handler
+	GetWatchdogTimerHandler			IPMI_App_Handler
+	SetBMCGlobalEnablesHandler		IPMI_App_Handler
+	GetBMCGlobalEnablesHandler		IPMI_App_Handler
+	ClearMsgFlagsHandler			IPMI_App_Handler
+	GetMsgFlagsHandler			IPMI_App_Handler
+	EnableMessageChannelRcvHandler		IPMI_App_Handler
+	GetMsgHandler				IPMI_App_Handler
+	SendMsgHandler				IPMI_App_Handler
+	ReadEventMsgBufferHandler		IPMI_App_Handler
+	GetBTInterfaceCapabilitiesHandler	IPMI_App_Handler
+	GetSystemGUIDHandler			IPMI_App_Handler
+	GetChannelAuthCapabilitiesHandler	IPMI_App_Handler
+	GetSessionChallengeHandler		IPMI_App_Handler
+	ActivateSessionHandler			IPMI_App_Handler
+	SetSessionPrivilegeHandler		IPMI_App_Handler
+	CloseSessionHandler			IPMI_App_Handler
+	GetSessionInfoHandler			IPMI_App_Handler
+
+	GetAuthCodeHandler			IPMI_App_Handler
+	SetChannelAccessHandler			IPMI_App_Handler
+	GetChannelAccessHandler			IPMI_App_Handler
+	GetChannelInfoHandler			IPMI_App_Handler
+	SetUserAccessHandler			IPMI_App_Handler
+	GetUserAccessHandler			IPMI_App_Handler
+	SetUserNameHandler			IPMI_App_Handler
+	GetUserNameHandler			IPMI_App_Handler
+	SetUserPasswordHandler			IPMI_App_Handler
+	ActivatePayloadHandler			IPMI_App_Handler
+	DeactivatePayloadHandler		IPMI_App_Handler
+	GetPayloadActivationStatusHandler	IPMI_App_Handler
+	GetPayloadInstanceInfoHandler		IPMI_App_Handler
+	SetUserPayloadAccessHandler		IPMI_App_Handler
+	GetUserPayloadAccessHandler		IPMI_App_Handler
+	GetChannelPayloadSupportHandler		IPMI_App_Handler
+	GetChannelPayloadVersionHandler		IPMI_App_Handler
+	GetChannelOEMPayloadInfoHandler		IPMI_App_Handler
+
+	MasterReadWriteHandler			IPMI_App_Handler
+
+	GetChannelCipherSuiteHandler		IPMI_App_Handler
+	SuspendResumePayloadEncryptionHandler	IPMI_App_Handler
+	SetChannelSecurityKeyHandler		IPMI_App_Handler
+	GetSystemInterfaceCapabilitiesHandler	IPMI_App_Handler
+	
+	Unsupported				IPMI_App_Handler
+}
+
+var IPMIAppHandler IPMIAppHandlerSet = IPMIAppHandlerSet{}
+
+func IPMI_APP_SetHandler(command int, handler IPMI_App_Handler) {
+	switch command {
+	case IPMI_CMD_GET_DEVICE_ID:
+		IPMIAppHandler.GetDeviceIDHandler = handler
+		IPMIAppHandler.BroadcastGetDeviceIDHandler = handler
+	case IPMI_CMD_COLD_RESET:
+		IPMIAppHandler.ColdResetHandler = handler
+	case IPMI_CMD_WARM_RESET:
+		IPMIAppHandler.WarmResetHandler = handler
+	case IPMI_CMD_GET_SELF_TEST_RESULTS:
+		IPMIAppHandler.GetSelfTestResultHandler = handler
+	case IPMI_CMD_MANUFACTURING_TEST_ON:
+		IPMIAppHandler.ManufacturingTestOnHandler = handler
+	case IPMI_CMD_SET_ACPI_POWER_STATE:
+		IPMIAppHandler.SetACPIPowerStateHandler = handler
+	case IPMI_CMD_GET_ACPI_POWER_STATE:
+		IPMIAppHandler.GetACPIPowerStateHandler = handler
+	case IPMI_CMD_GET_DEVICE_GUID:
+		IPMIAppHandler.GetDeviceGUIDHandler = handler
+	case IPMI_CMD_RESET_WATCHDOG_TIMER:
+		IPMIAppHandler.ResetWatchdogTimerHandler = handler
+	case IPMI_CMD_SET_WATCHDOG_TIMER:
+		IPMIAppHandler.SetWatchdogTimerHandler = handler
+	case IPMI_CMD_GET_WATCHDOG_TIMER:
+		IPMIAppHandler.GetWatchdogTimerHandler = handler
+	case IPMI_CMD_SET_BMC_GLOBAL_ENABLES:
+		IPMIAppHandler.SetBMCGlobalEnablesHandler = handler
+	case IPMI_CMD_GET_BMC_GLOBAL_ENABLES:
+		IPMIAppHandler.GetBMCGlobalEnablesHandler = handler
+	case IPMI_CMD_CLEAR_MSG_FLAGS:
+		IPMIAppHandler.ClearMsgFlagsHandler = handler
+	case IPMI_CMD_GET_MSG_FLAGS:
+		IPMIAppHandler.GetMsgFlagsHandler = handler
+	case IPMI_CMD_ENABLE_MESSAGE_CHANNEL_RCV:
+		IPMIAppHandler.EnableMessageChannelRcvHandler = handler
+	case IPMI_CMD_GET_MSG:
+		IPMIAppHandler.GetMsgHandler = handler
+	case IPMI_CMD_SEND_MSG:
+		IPMIAppHandler.SendMsgHandler = handler
+	case IPMI_CMD_READ_EVENT_MSG_BUFFER:
+		IPMIAppHandler.ReadEventMsgBufferHandler = handler
+	case IPMI_CMD_GET_BT_INTERFACE_CAPABILITIES:
+		IPMIAppHandler.GetBTInterfaceCapabilitiesHandler = handler
+	case IPMI_CMD_GET_SYSTEM_GUID:
+		IPMIAppHandler.GetSystemGUIDHandler = handler
+	case IPMI_CMD_GET_CHANNEL_AUTH_CAPABILITIES:
+		IPMIAppHandler.GetChannelAuthCapabilitiesHandler = handler
+	case IPMI_CMD_GET_SESSION_CHALLENGE:
+		IPMIAppHandler.GetSessionChallengeHandler = handler
+	case IPMI_CMD_ACTIVATE_SESSION:
+		IPMIAppHandler.ActivateSessionHandler = handler
+	case IPMI_CMD_SET_SESSION_PRIVILEGE:
+		IPMIAppHandler.SetSessionPrivilegeHandler = handler
+	case IPMI_CMD_CLOSE_SESSION:
+		IPMIAppHandler.CloseSessionHandler = handler
+	case IPMI_CMD_GET_SESSION_INFO:
+		IPMIAppHandler.GetSessionInfoHandler = handler
+	case IPMI_CMD_GET_AUTHCODE:
+		IPMIAppHandler.GetAuthCodeHandler = handler
+	case IPMI_CMD_SET_CHANNEL_ACCESS:
+		IPMIAppHandler.SetChannelAccessHandler = handler
+	case IPMI_CMD_GET_CHANNEL_ACCESS:
+		IPMIAppHandler.GetChannelAccessHandler = handler
+	case IPMI_CMD_GET_CHANNEL_INFO:
+		IPMIAppHandler.GetChannelInfoHandler = handler
+	case IPMI_CMD_SET_USER_ACCESS:
+		IPMIAppHandler.SetUserAccessHandler = handler
+	case IPMI_CMD_GET_USER_ACCESS:
+		IPMIAppHandler.GetUserAccessHandler = handler
+	case IPMI_CMD_SET_USER_NAME:
+		IPMIAppHandler.SetUserNameHandler = handler
+	case IPMI_CMD_GET_USER_NAME:
+		IPMIAppHandler.GetUserNameHandler = handler
+	case IPMI_CMD_SET_USER_PASSWORD:
+		IPMIAppHandler.SetUserPasswordHandler = handler
+	case IPMI_CMD_ACTIVATE_PAYLOAD:
+		IPMIAppHandler.ActivatePayloadHandler = handler
+	case IPMI_CMD_DEACTIVATE_PAYLOAD:
+		IPMIAppHandler.DeactivatePayloadHandler = handler
+	case IPMI_CMD_GET_PAYLOAD_ACTIVATION_STATUS:
+		IPMIAppHandler.GetPayloadActivationStatusHandler = handler
+	case IPMI_CMD_GET_PAYLOAD_INSTANCE_INFO:
+		IPMIAppHandler.GetPayloadInstanceInfoHandler = handler
+	case IPMI_CMD_SET_USER_PAYLOAD_ACCESS:
+		IPMIAppHandler.SetUserPayloadAccessHandler = handler
+	case IPMI_CMD_GET_USER_PAYLOAD_ACCESS:
+		IPMIAppHandler.GetUserPayloadAccessHandler = handler
+	case IPMI_CMD_GET_CHANNEL_PAYLOAD_SUPPORT:
+		IPMIAppHandler.GetChannelPayloadSupportHandler = handler
+	case IPMI_CMD_GET_CHANNEL_PAYLOAD_VERSION:
+		IPMIAppHandler.GetChannelPayloadVersionHandler = handler
+	case IPMI_CMD_GET_CHANNEL_OEM_PAYLOAD_INFO:
+		IPMIAppHandler.GetChannelOEMPayloadInfoHandler = handler
+	case IPMI_CMD_MASTER_READ_WRITE:
+		IPMIAppHandler.MasterReadWriteHandler = handler
+	case IPMI_CMD_GET_CHANNEL_CIPHER_SUITES:
+		IPMIAppHandler.GetChannelCipherSuiteHandler = handler
+	case IPMI_CMD_SUSPEND_RESUME_PAYLOAD_ENCRYPTION:
+		IPMIAppHandler.SuspendResumePayloadEncryptionHandler = handler
+	case IPMI_CMD_SET_CHANNEL_SECURITY_KEY:
+		IPMIAppHandler.SetChannelSecurityKeyHandler = handler
+	case IPMI_CMD_GET_SYSTEM_INTERFACE_CAPABILITIES:
+		IPMIAppHandler.GetSystemInterfaceCapabilitiesHandler = handler
+	}
+}
+
+func init() {
+	IPMIAppHandler.Unsupported = HandleIPMIUnsupportedAppCommand
+
+	IPMI_APP_SetHandler(IPMI_CMD_GET_CHANNEL_AUTH_CAPABILITIES, HandleIPMIAuthenticationCapabilities)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_SESSION_CHALLENGE, HandleIPMIGetSessionChallenge)
+	IPMI_APP_SetHandler(IPMI_CMD_ACTIVATE_SESSION, HandleIPMIActivateSession)
+	IPMI_APP_SetHandler(IPMI_CMD_SET_SESSION_PRIVILEGE, HandleIPMISetSessionPrivilegeLevel)
+	IPMI_APP_SetHandler(IPMI_CMD_CLOSE_SESSION, HandleIPMICloseSession)
+	
+	IPMI_APP_SetHandler(IPMI_CMD_GET_DEVICE_ID, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_BROADCAST_GET_DEVICE_ID, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_COLD_RESET, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_WARM_RESET, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_SELF_TEST_RESULTS, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_MANUFACTURING_TEST_ON, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_SET_ACPI_POWER_STATE, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_ACPI_POWER_STATE, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_DEVICE_GUID, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_RESET_WATCHDOG_TIMER, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_SET_WATCHDOG_TIMER, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_WATCHDOG_TIMER, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_SET_BMC_GLOBAL_ENABLES, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_BMC_GLOBAL_ENABLES, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_CLEAR_MSG_FLAGS, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_MSG_FLAGS, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_ENABLE_MESSAGE_CHANNEL_RCV, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_MSG, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_SEND_MSG, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_READ_EVENT_MSG_BUFFER, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_BT_INTERFACE_CAPABILITIES, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_SYSTEM_GUID, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_SESSION_INFO, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_AUTHCODE, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_SET_CHANNEL_ACCESS, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_CHANNEL_ACCESS, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_CHANNEL_INFO, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_SET_USER_ACCESS, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_USER_ACCESS, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_SET_USER_NAME, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_USER_NAME, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_SET_USER_PASSWORD, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_ACTIVATE_PAYLOAD, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_DEACTIVATE_PAYLOAD, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_PAYLOAD_ACTIVATION_STATUS, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_PAYLOAD_INSTANCE_INFO, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_SET_USER_PAYLOAD_ACCESS, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_USER_PAYLOAD_ACCESS, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_CHANNEL_PAYLOAD_SUPPORT, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_CHANNEL_PAYLOAD_VERSION, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_CHANNEL_OEM_PAYLOAD_INFO, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_MASTER_READ_WRITE, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_CHANNEL_CIPHER_SUITES, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_SUSPEND_RESUME_PAYLOAD_ENCRYPTION, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_SET_CHANNEL_SECURITY_KEY, HandleIPMIUnsupportedAppCommand)
+	IPMI_APP_SetHandler(IPMI_CMD_GET_SYSTEM_INTERFACE_CAPABILITIES, HandleIPMIUnsupportedAppCommand)
+}
+
+
+// Default Handler Implementation
 const (
 	AUTH_NONE =	0x00
 	AUTH_MD2 =	0x01
@@ -424,198 +652,198 @@ func IPMI_APP_DeserializeAndExecute(addr *net.UDPAddr, server *net.UDPConn, wrap
 	switch message.Command {
 	case IPMI_CMD_GET_DEVICE_ID:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_DEVICE_ID")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetDeviceIDHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_COLD_RESET:
 		log.Println("      IPMI APP: Command = IPMI_CMD_COLD_RESET")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.ColdResetHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_WARM_RESET:
 		log.Println("      IPMI APP: Command = IPMI_CMD_WARM_RESET")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.WarmResetHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_SELF_TEST_RESULTS:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_SELF_TEST_RESULTS")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetSelfTestResultHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_MANUFACTURING_TEST_ON:
 		log.Println("      IPMI APP: Command = IPMI_CMD_MANUFACTURING_TEST_ON")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.ManufacturingTestOnHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_SET_ACPI_POWER_STATE:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SET_ACPI_POWER_STATE")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.SetACPIPowerStateHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_ACPI_POWER_STATE:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_ACPI_POWER_STATE")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetACPIPowerStateHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_DEVICE_GUID:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_DEVICE_GUID")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetDeviceGUIDHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_RESET_WATCHDOG_TIMER:
 		log.Println("      IPMI APP: Command = IPMI_CMD_RESET_WATCHDOG_TIMER")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.ResetWatchdogTimerHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_SET_WATCHDOG_TIMER:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SET_WATCHDOG_TIMER")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.SetWatchdogTimerHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_WATCHDOG_TIMER:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_WATCHDOG_TIMER")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetWatchdogTimerHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_SET_BMC_GLOBAL_ENABLES:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SET_BMC_GLOBAL_ENABLES")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.SetBMCGlobalEnablesHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_BMC_GLOBAL_ENABLES:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_BMC_GLOBAL_ENABLES")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetBMCGlobalEnablesHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_CLEAR_MSG_FLAGS:
 		log.Println("      IPMI APP: Command =IPMI_CMD_CLEAR_MSG_FLAGS")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.ClearMsgFlagsHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_MSG_FLAGS:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_MSG_FLAGS")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetMsgFlagsHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_ENABLE_MESSAGE_CHANNEL_RCV:
 		log.Println("      IPMI APP: Command = IPMI_CMD_ENABLE_MESSAGE_CHANNEL_RCV")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.EnableMessageChannelRcvHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_MSG:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_MSG")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetMsgHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_SEND_MSG:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SEND_MSG")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.SendMsgHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_READ_EVENT_MSG_BUFFER:
 		log.Println("      IPMI APP: Command = IPMI_CMD_READ_EVENT_MSG_BUFFER")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.ReadEventMsgBufferHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_BT_INTERFACE_CAPABILITIES:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_BT_INTERFACE_CAPABILITIES")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetBTInterfaceCapabilitiesHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_SYSTEM_GUID:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_SYSTEM_GUID")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetSystemGUIDHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_CHANNEL_AUTH_CAPABILITIES:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_CHANNEL_AUTH_CAPABILITIES")
-		HandleIPMIAuthenticationCapabilities(addr, server, wrapper, message)
+		IPMIAppHandler.GetChannelAuthCapabilitiesHandler(addr, server, wrapper, message)
 	case IPMI_CMD_GET_SESSION_CHALLENGE:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_SESSION_CHALLENGE")
-		HandleIPMIGetSessionChallenge(addr, server, wrapper, message)
+		IPMIAppHandler.GetSessionChallengeHandler(addr, server, wrapper, message)
 	case IPMI_CMD_ACTIVATE_SESSION:
 		log.Println("      IPMI APP: Command = IPMI_CMD_ACTIVATE_SESSION")
-		HandleIPMIActivateSession(addr, server, wrapper, message)
+		IPMIAppHandler.ActivateSessionHandler(addr, server, wrapper, message)
 	case IPMI_CMD_SET_SESSION_PRIVILEGE:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SET_SESSION_PRIVILEGE")
-		HandleIPMISetSessionPrivilegeLevel(addr, server, wrapper, message)
+		IPMIAppHandler.SetSessionPrivilegeHandler(addr, server, wrapper, message)
 	case IPMI_CMD_CLOSE_SESSION:
 		log.Println("      IPMI APP: Command = IPMI_CMD_CLOSE_SESSION")
-		HandleIPMICloseSession(addr, server, wrapper, message)
+		IPMIAppHandler.CloseSessionHandler(addr, server, wrapper, message)
 	case IPMI_CMD_GET_SESSION_INFO:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_SESSION_INFO")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetSessionInfoHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_AUTHCODE:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_AUTHCODE")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetAuthCodeHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_SET_CHANNEL_ACCESS:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SET_CHANNEL_ACCESS")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.SetChannelAccessHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_CHANNEL_ACCESS:
 		log.Println("      IPMI APP: Command =IPMI_CMD_GET_CHANNEL_ACCESS")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetChannelAccessHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_CHANNEL_INFO:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_CHANNEL_INFO")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetChannelInfoHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_SET_USER_ACCESS:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SET_USER_ACCESS")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.SetUserAccessHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_USER_ACCESS:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_USER_ACCESS")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetUserAccessHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_SET_USER_NAME:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SET_USER_NAME")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.SetUserNameHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_USER_NAME:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_USER_NAME")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetUserNameHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_SET_USER_PASSWORD:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SET_USER_PASSWORD")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.SetUserPasswordHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_ACTIVATE_PAYLOAD:
 		log.Println("      IPMI APP: Command = IPMI_CMD_ACTIVATE_PAYLOAD")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.ActivatePayloadHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_DEACTIVATE_PAYLOAD:
 		log.Println("      IPMI APP: Command = IPMI_CMD_DEACTIVATE_PAYLOAD")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.DeactivatePayloadHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_PAYLOAD_ACTIVATION_STATUS:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_PAYLOAD_ACTIVATION_STATUS")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetPayloadActivationStatusHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_PAYLOAD_INSTANCE_INFO:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_PAYLOAD_INSTANCE_INFO")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetPayloadInstanceInfoHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_SET_USER_PAYLOAD_ACCESS:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SET_USER_PAYLOAD_ACCESS")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.SetUserPayloadAccessHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_USER_PAYLOAD_ACCESS:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_USER_PAYLOAD_ACCESS")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetUserPayloadAccessHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_CHANNEL_PAYLOAD_SUPPORT:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_CHANNEL_PAYLOAD_SUPPORT")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetChannelPayloadSupportHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_CHANNEL_PAYLOAD_VERSION:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_CHANNEL_PAYLOAD_VERSION")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetChannelPayloadVersionHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_CHANNEL_OEM_PAYLOAD_INFO:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_CHANNEL_OEM_PAYLOAD_INFO")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetChannelOEMPayloadInfoHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_MASTER_READ_WRITE:
 		log.Println("      IPMI APP: Command = IPMI_CMD_MASTER_READ_WRITE")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.MasterReadWriteHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_CHANNEL_CIPHER_SUITES:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_CHANNEL_CIPHER_SUITES")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetChannelCipherSuiteHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_SUSPEND_RESUME_PAYLOAD_ENCRYPTION:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SUSPEND_RESUME_PAYLOAD_ENCRYPTION")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.SuspendResumePayloadEncryptionHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_SET_CHANNEL_SECURITY_KEY:
 		log.Println("      IPMI APP: Command = IPMI_CMD_SET_CHANNEL_SECURITY_KEY")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.SetChannelSecurityKeyHandler(addr, server, wrapper, message)
 
 	case IPMI_CMD_GET_SYSTEM_INTERFACE_CAPABILITIES:
 		log.Println("      IPMI APP: Command = IPMI_CMD_GET_SYSTEM_INTERFACE_CAPABILITIES")
-		HandleIPMIUnsupportedAppCommand(addr, server, wrapper, message)
+		IPMIAppHandler.GetSystemInterfaceCapabilitiesHandler(addr, server, wrapper, message)
 
 	}
 }

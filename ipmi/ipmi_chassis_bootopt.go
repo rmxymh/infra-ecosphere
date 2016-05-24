@@ -10,6 +10,71 @@ import (
 	"github.com/rmxymh/infra-ecosphere/vm"
 )
 
+const (
+	BOOT_SET_IN_PROGRESS = 			0
+	BOOT_SERVICE_PARTITION_SELECTOR = 	1
+	BOOT_SERVICE_PARTITION_SCAN = 		2
+	BOOT_BMC_BOOT_FLAG_VALID_BIT_CLEARING =	3
+	BOOT_INFO_ACK =				4
+	BOOT_FLAG =				5
+	BOOT_INITIATOR_INFO =			6
+	BOOT_INITIATOR_MAILBOX =		7
+)
+
+type IPMI_Chassis_BootOpt_Handler func(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage, selector IPMIChassisBootOptionParameterSelector)
+
+type IPMIChassisBootOptHandlerSet struct {
+	SetInProgressHandler			IPMI_Chassis_BootOpt_Handler
+	ServicePartitionSelectorHandler		IPMI_Chassis_BootOpt_Handler
+	ServicePartitionScanHandler		IPMI_Chassis_BootOpt_Handler
+	BMCBootFlagValidBitClearingHandler	IPMI_Chassis_BootOpt_Handler
+	BootInfoAcknowledgementHandler		IPMI_Chassis_BootOpt_Handler
+	BootFlagHandler				IPMI_Chassis_BootOpt_Handler
+	BootInitiatorInfoHandler		IPMI_Chassis_BootOpt_Handler
+	BootInitiatorMailbox			IPMI_Chassis_BootOpt_Handler
+	Unsupported				IPMI_Chassis_BootOpt_Handler
+}
+
+var IPMIChassisBootOptHandler IPMIChassisBootOptHandlerSet = IPMIChassisBootOptHandlerSet{}
+
+func IPMI_CHASSIS_BOOT_OPTION_SetHandler(command int, handler IPMI_Chassis_BootOpt_Handler) {
+	switch command {
+	case BOOT_SET_IN_PROGRESS:
+		IPMIChassisBootOptHandler.SetInProgressHandler = handler
+	case BOOT_SERVICE_PARTITION_SELECTOR:
+		IPMIChassisBootOptHandler.ServicePartitionSelectorHandler = handler
+	case BOOT_SERVICE_PARTITION_SCAN:
+		IPMIChassisBootOptHandler.ServicePartitionScanHandler = handler
+	case BOOT_BMC_BOOT_FLAG_VALID_BIT_CLEARING:
+		IPMIChassisBootOptHandler.BMCBootFlagValidBitClearingHandler = handler
+	case BOOT_INFO_ACK:
+		IPMIChassisBootOptHandler.BootInfoAcknowledgementHandler = handler
+	case BOOT_FLAG:
+		IPMIChassisBootOptHandler.BootFlagHandler = handler
+	case BOOT_INITIATOR_INFO:
+		IPMIChassisBootOptHandler.BootInitiatorInfoHandler = handler
+	case BOOT_INITIATOR_MAILBOX:
+		IPMIChassisBootOptHandler.BootInitiatorMailbox = handler
+	}
+}
+
+func init() {
+	IPMIChassisBootOptHandler.Unsupported = HandleIPMIChassisBootOptionNotSupport
+
+	IPMI_CHASSIS_BOOT_OPTION_SetHandler(BOOT_SET_IN_PROGRESS, HandleIPMIChassisBootOptionSetInProgress)
+	IPMI_CHASSIS_BOOT_OPTION_SetHandler(BOOT_INFO_ACK, HandleIPMIChassisBootOptionBootInfoAck)
+	IPMI_CHASSIS_BOOT_OPTION_SetHandler(BOOT_FLAG, HandleIPMIChassisBootOptionBootFlags)
+
+	IPMI_CHASSIS_BOOT_OPTION_SetHandler(BOOT_SERVICE_PARTITION_SELECTOR, HandleIPMIChassisBootOptionNotSupport)
+	IPMI_CHASSIS_BOOT_OPTION_SetHandler(BOOT_SERVICE_PARTITION_SCAN, HandleIPMIChassisBootOptionNotSupport)
+	IPMI_CHASSIS_BOOT_OPTION_SetHandler(BOOT_BMC_BOOT_FLAG_VALID_BIT_CLEARING, HandleIPMIChassisBootOptionNotSupport)
+	IPMI_CHASSIS_BOOT_OPTION_SetHandler(BOOT_INITIATOR_INFO, HandleIPMIChassisBootOptionNotSupport)
+	IPMI_CHASSIS_BOOT_OPTION_SetHandler(BOOT_INITIATOR_MAILBOX, HandleIPMIChassisBootOptionNotSupport)
+}
+
+
+
+// Utility
 func SendIPMIChassisSetBootOptionResponseBack(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
 	session, ok := GetSession(wrapper.SessionId)
 	if ! ok {
@@ -38,6 +103,11 @@ func SendIPMIChassisSetBootOptionResponseBack(addr *net.UDPAddr, server *net.UDP
 		SerializeIPMI(&obuf, responseWrapper, responseMessage)
 		server.WriteToUDP(obuf.Bytes(), addr)
 	}
+}
+
+// Default Handler Implementation
+func HandleIPMIChassisBootOptionNotSupport(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage, selector IPMIChassisBootOptionParameterSelector) {
+	log.Printf("        IPMI BootOption %s is not supported currently.", GetBootOptionParameterSelectorString(int(selector.BootOptionParameterSelector)))
 }
 
 const (
@@ -337,17 +407,6 @@ func HandleIPMIChassisBootOptionBootFlags(addr *net.UDPAddr, server *net.UDPConn
 	SendIPMIChassisSetBootOptionResponseBack(addr, server, wrapper, message);
 }
 
-const (
-	BOOT_SET_IN_PROGRESS = 			0
-	BOOT_SERVICE_PARTITION_SELECTOR = 	1
-	BOOT_SERVICE_PARTITION_SCAN = 		2
-	BOOT_BMC_BOOT_FLAG_VALID_BIT_CLEARING =	3
-	BOOT_INFO_ACK =				4
-	BOOT_FLAG =				5
-	BOOT_INITIATOR_INFO =			6
-	BOOT_INITIATOR_MAILBOX =		7
-)
-
 type IPMIChassisBootOptionParameterSelector struct {
 	Validity			bool
 	BootOptionParameterSelector	uint8
@@ -374,10 +433,6 @@ func GetBootOptionParameterSelectorString(selector int) (string) {
 		return "BOOT_INITIATOR_MAILBOX"
 	}
 	return "UNKNOWN"
-}
-
-func HandleIPMIChassisBootOptionNotSupport(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage, selector IPMIChassisBootOptionParameterSelector) {
-	log.Printf("        IPMI BootOption %s is not supported currently.", GetBootOptionParameterSelectorString(int(selector.BootOptionParameterSelector)))
 }
 
 func IPMI_CHASSIS_SetBootOption_DeserializeAndExecute(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
