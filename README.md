@@ -63,14 +63,14 @@ The format is as the following, and if you want more detailed information about 
 {
 	"Nodes": [
 		{
-			"BMCIP": <BMC IP>,
-			"VMName": <Virtual Machine Name>
+			"BMCIP": <BMC_IP>,
+			"VMName": <Virtual_Machine_Name>
 		}
 	],
 	"BMCUsers": [
 		{
-			"Username": <BMC Username>,
-			"Password": <BMC Password>
+			"Username": <BMC_Username>,
+			"Password": <BMC_Password>
 		}
 	]
 }
