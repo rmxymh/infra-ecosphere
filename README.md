@@ -76,7 +76,8 @@ The format is as the following, and if you want more detailed information about 
 			"Username": <BMC_Username>,
 			"Password": <BMC_Password>
 		}
-	]
+	],
+	"WebAPIPort":   <WEB_API_SERVER_LISTEN_PORT>
 }
 ```
 
@@ -99,7 +100,8 @@ More detailed example:
 			"Username": "admin",
 			"Password": "admin"
 		}
-	]
+	],
+	"WebAPIPort":   9090
 }
 ```
 

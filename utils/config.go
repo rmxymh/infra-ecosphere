@@ -7,6 +7,7 @@ import (
 	"net"
 	"github.com/rmxymh/infra-ecosphere/vm"
 	"github.com/rmxymh/infra-ecosphere/bmc"
+	"github.com/rmxymh/infra-ecosphere/web"
 )
 
 type ConfigNode struct {
@@ -22,6 +23,7 @@ type ConfigBMCUser struct {
 type Configuration struct {
 	Nodes		[]ConfigNode
 	BMCUsers	[]ConfigBMCUser
+	WebAPIPort	int
 }
 
 func LoadConfig(configFile string) {
@@ -47,5 +49,11 @@ func LoadConfig(configFile string) {
 	for _, user := range configuration.BMCUsers {
 		log.Printf("Config: Add BMC User %s\n", user.Username)
 		bmc.AddBMCUser(user.Username, user.Password)
+	}
+
+	if configuration.WebAPIPort <= 1024 || configuration.WebAPIPort > 65535 {
+		log.Fatalln("Web API Port value should be larger than 1024 and less than 65536.")
+	} else {
+		web.ListenPort = configuration.WebAPIPort
 	}
 }
