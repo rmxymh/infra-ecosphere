@@ -30,21 +30,25 @@ Please make sure that you have installed Go in your environment, and all the env
 
 Then:
 
-* Clone this project
+* Get this project source files
+
 ```sh
-$ cd src
-$ git clone https://github.com/rmxymh/infra-ecosphere.git
+$ cd ${GOPATH}/src
+$ go get github.com/rmxymh/infra-ecosphere
 $ cd infra-ecoshphere
 ```
 
 * Prepare for dependencies
+
 ```sh
 $ go get github.com/rmxymh/go-virtualbox
 $ go get github.com/htruong/go-md2
 ```
 
-* Build
+* Build: infra-ecosphere main package is located at ${GOPATH}/src/github.com/rmxymh/infra-ecosphere/infra-ecosphere 
+
 ```sh
+$ cd infra-ecosphere
 $ go install
 ```
 
