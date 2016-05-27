@@ -62,17 +62,21 @@ func SetBootDevice(addr *net.UDPAddr, server *net.UDPConn, wrapper ipmi.IPMISess
 	case ipmi.BOOT_DEVICE_FORCE_PXE:
 		log.Println("        IPMI CHASSIS BOOT DEVICE: BOOT_DEVICE_FORCE_PXE")
 		bootdevReq.Device = "PXE"
-		status, err := napping.Put(baseAPI, &bootdevReq, &bootdevResp, nil)
-		if status != 200 {
-			log.Println("Failed to call ecosphere Web API for setting bootdev: ", err.Error())
+		resp, err := napping.Put(baseAPI, &bootdevReq, &bootdevResp, nil)
+		if err != nil {
+			log.Println("Failed to call ecophsere Web API for setting bootdev: ", err.Error())
+		} else if resp.Status() != 200 {
+			log.Println("Failed to call ecosphere Web API for setting bootdev: ", bootdevResp.Status)
 		}
 
 	case ipmi.BOOT_DEVICE_FORCE_HDD:
 		log.Println("        IPMI CHASSIS BOOT DEVICE: BOOT_DEVICE_FORCE_HDD")
 		bootdevReq.Device = "DISK"
-		status, err := napping.Put(baseAPI, &bootdevReq, &bootdevResp, nil)
-		if status != 200 {
-			log.Println("Failed to call ecosphere Web API for setting bootdev: ", err.Error())
+		resp, err := napping.Put(baseAPI, &bootdevReq, &bootdevResp, nil)
+		if err != nil {
+			log.Println("Failed to call ecophsere Web API for setting bootdev: ", err.Error())
+		} else if resp.Status() != 200 {
+			log.Println("Failed to call ecosphere Web API for setting bootdev: ", bootdevResp.Status)
 		}
 
 	case ipmi.BOOT_DEVICE_FORCE_HDD_SAFE:
