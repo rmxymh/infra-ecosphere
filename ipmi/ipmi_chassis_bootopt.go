@@ -35,7 +35,7 @@ type IPMIChassisBootOptHandlerSet struct {
 	Unsupported				IPMI_Chassis_BootOpt_Handler
 }
 
-var IPMIChassisBootOptHandler IPMIChassisBootOptHandlerSet = IPMIChassisBootOptHandlerSet{}
+var IPMIChassisBootOptHandler *IPMIChassisBootOptHandlerSet
 
 func IPMI_CHASSIS_BOOT_OPTION_SetHandler(command int, handler IPMI_Chassis_BootOpt_Handler) {
 	switch command {
@@ -59,6 +59,9 @@ func IPMI_CHASSIS_BOOT_OPTION_SetHandler(command int, handler IPMI_Chassis_BootO
 }
 
 func init() {
+	handlers := IPMIChassisBootOptHandlerSet{}
+	
+	IPMIChassisBootOptHandler = &handlers
 	IPMIChassisBootOptHandler.Unsupported = HandleIPMIChassisBootOptionNotSupport
 
 	IPMI_CHASSIS_BOOT_OPTION_SetHandler(BOOT_SET_IN_PROGRESS, HandleIPMIChassisBootOptionSetInProgress)
