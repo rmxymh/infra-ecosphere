@@ -89,7 +89,9 @@ func HandleIPMIGroupExtATCAGetPICMGPropHandler(addr *net.UDPAddr, server *net.UD
 		log.Printf("Unable to find session 0x%08x\n", wrapper.SessionId)
 	} else {
 		bmcUser := session.User
-		responseMessage := PICMGData{}
+		responseMessage := PICMGData{
+			data: 0x81b4cb201800c107,
+		}
 
 		session.LocalSessionSequenceNumber += 1
 		session.RemoteSessionSequenceNumber += 1
