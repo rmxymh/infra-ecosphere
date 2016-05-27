@@ -191,6 +191,7 @@ func IPMIDeserializeAndExecute(buf io.Reader, addr *net.UDPAddr, server *net.UDP
 		log.Println("    IPMI: NetFunction = TRANSPORT")
 	case IPMI_NETFN_GROUP_EXTENSION:
 		log.Println("    IPMI: NetFunction = GROUP EXTENSION")
+		IPMI_GROUPEXT_DeserializeAndExecute(addr, server, wrapper, message)
 	case IPMI_NETFN_OEM_GROUP:
 		log.Println("    IPMI: NetFunction = OEM GROUP")
 	default:

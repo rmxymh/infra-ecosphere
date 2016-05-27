@@ -93,7 +93,7 @@ func init() {
 
 // Default Handler Implementation
 func HandleIPMIUnsupportedChassisCommand(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
-	log.Println("      IPMI App: This command is not supported currently, ignore.")
+	log.Println("      IPMI Chassis: This command is not supported currently, ignore.")
 }
 
 type IPMIGetChassisStatusResponse struct {
