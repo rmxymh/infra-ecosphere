@@ -35,7 +35,7 @@ type IPMIChassisBootOptHandlerSet struct {
 	Unsupported				IPMI_Chassis_BootOpt_Handler
 }
 
-var IPMIChassisBootOptHandler *IPMIChassisBootOptHandlerSet
+var IPMIChassisBootOptHandler IPMIChassisBootOptHandlerSet = IPMIChassisBootOptHandlerSet{}
 
 func IPMI_CHASSIS_BOOT_OPTION_SetHandler(command int, handler IPMI_Chassis_BootOpt_Handler) {
 	switch command {
@@ -59,9 +59,6 @@ func IPMI_CHASSIS_BOOT_OPTION_SetHandler(command int, handler IPMI_Chassis_BootO
 }
 
 func init() {
-	handlers := IPMIChassisBootOptHandlerSet{}
-	
-	IPMIChassisBootOptHandler = &handlers
 	IPMIChassisBootOptHandler.Unsupported = HandleIPMIChassisBootOptionNotSupport
 
 	IPMI_CHASSIS_BOOT_OPTION_SetHandler(BOOT_SET_IN_PROGRESS, HandleIPMIChassisBootOptionSetInProgress)
@@ -450,20 +447,20 @@ func IPMI_CHASSIS_SetBootOption_DeserializeAndExecute(addr *net.UDPAddr, server 
 
 	switch request.BootOptionParameterSelector {
 	case BOOT_SET_IN_PROGRESS:
-		HandleIPMIChassisBootOptionSetInProgress(addr, server, wrapper, message, request)
+		IPMIChassisBootOptHandler.SetInProgressHandler(addr, server, wrapper, message, request)
 	case BOOT_SERVICE_PARTITION_SELECTOR:
-		HandleIPMIChassisBootOptionNotSupport(addr, server, wrapper, message, request)
+		IPMIChassisBootOptHandler.ServicePartitionSelectorHandler(addr, server, wrapper, message, request)
 	case BOOT_SERVICE_PARTITION_SCAN:
-		HandleIPMIChassisBootOptionNotSupport(addr, server, wrapper, message, request)
+		IPMIChassisBootOptHandler.ServicePartitionScanHandler(addr, server, wrapper, message, request)
 	case BOOT_BMC_BOOT_FLAG_VALID_BIT_CLEARING:
-		HandleIPMIChassisBootOptionNotSupport(addr, server, wrapper, message, request)
+		IPMIChassisBootOptHandler.BMCBootFlagValidBitClearingHandler(addr, server, wrapper, message, request)
 	case BOOT_INFO_ACK:
-		HandleIPMIChassisBootOptionBootInfoAck(addr, server, wrapper, message, request)
+		IPMIChassisBootOptHandler.BootInfoAcknowledgementHandler(addr, server, wrapper, message, request)
 	case BOOT_FLAG:
-		HandleIPMIChassisBootOptionBootFlags(addr, server, wrapper, message, request)
+		IPMIChassisBootOptHandler.BootFlagHandler(addr, server, wrapper, message, request)
 	case BOOT_INITIATOR_INFO:
-		HandleIPMIChassisBootOptionNotSupport(addr, server, wrapper, message, request)
+		IPMIChassisBootOptHandler.BootInitiatorInfoHandler(addr, server, wrapper, message, request)
 	case BOOT_INITIATOR_MAILBOX:
-		HandleIPMIChassisBootOptionNotSupport(addr, server, wrapper, message, request)
+		IPMIChassisBootOptHandler.BootInitiatorMailbox(addr, server, wrapper, message, request)
 	}
 }
