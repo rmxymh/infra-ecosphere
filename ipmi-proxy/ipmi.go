@@ -9,8 +9,7 @@ import (
 	"github.com/rmxymh/infra-ecosphere/ipmi"
 	"fmt"
 	"github.com/rmxymh/infra-ecosphere/web"
-	"net/http"
-	"github.com/jmcvetta/restclient"
+	"github.com/jmcvetta/napping"
 )
 
 var EcosphereIP string = "10.0.2.2"
@@ -63,13 +62,7 @@ func SetBootDevice(addr *net.UDPAddr, server *net.UDPConn, wrapper ipmi.IPMISess
 	case ipmi.BOOT_DEVICE_FORCE_PXE:
 		log.Println("        IPMI CHASSIS BOOT DEVICE: BOOT_DEVICE_FORCE_PXE")
 		bootdevReq.Device = "PXE"
-		req := restclient.RequestResponse{
-			Url: baseAPI,
-			Method: http.MethodPut,
-			Data: &bootdevReq,
-			Result: &bootdevResp,
-		}
-		status, err := restclient.Do(&req)
+		status, err := napping.Put(baseAPI, &bootdevReq, &bootdevResp, nil)
 		if status != 200 {
 			log.Println("Failed to call ecosphere Web API for setting bootdev: ", err.Error())
 		}
@@ -77,13 +70,7 @@ func SetBootDevice(addr *net.UDPAddr, server *net.UDPConn, wrapper ipmi.IPMISess
 	case ipmi.BOOT_DEVICE_FORCE_HDD:
 		log.Println("        IPMI CHASSIS BOOT DEVICE: BOOT_DEVICE_FORCE_HDD")
 		bootdevReq.Device = "DISK"
-		req := restclient.RequestResponse{
-			Url: baseAPI,
-			Method: http.MethodPut,
-			Data: &bootdevReq,
-			Result: &bootdevResp,
-		}
-		status, err := restclient.Do(&req)
+		status, err := napping.Put(baseAPI, &bootdevReq, &bootdevResp, nil)
 		if status != 200 {
 			log.Println("Failed to call ecosphere Web API for setting bootdev: ", err.Error())
 		}
