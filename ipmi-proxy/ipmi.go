@@ -13,6 +13,7 @@ import (
 )
 
 var EcosphereIP string = "10.0.2.2"
+var EcospherePort int = 9090
 
 func SetBootDevice(addr *net.UDPAddr, server *net.UDPConn, wrapper ipmi.IPMISessionWrapper, message ipmi.IPMIMessage, selector ipmi.IPMIChassisBootOptionParameterSelector) {
 	localIP := utils.GetLocalIP(server)
@@ -56,7 +57,7 @@ func SetBootDevice(addr *net.UDPAddr, server *net.UDPConn, wrapper ipmi.IPMISess
 
 	bootdevReq := web.WebReqBootDev{}
 	bootdevResp := web.WebRespBootDev{}
-	baseAPI := fmt.Sprintf("http://%s/api/BMCs/%s/bootdev", EcosphereIP, localIP)
+	baseAPI := fmt.Sprintf("http://%s:%d/api/BMCs/%s/bootdev", EcosphereIP, EcospherePort, localIP)
 
 	switch device {
 	case ipmi.BOOT_DEVICE_FORCE_PXE:

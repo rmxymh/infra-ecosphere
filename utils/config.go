@@ -26,11 +26,13 @@ type Configuration struct {
 	WebAPIPort	int
 }
 
-func LoadConfig(configFile string) {
+func LoadConfig(configFile string) Configuration {
 	file, opError := os.Open(configFile)
 	if opError != nil {
 		log.Println("Config: Failed to open config file ", configFile, ", ignore...")
-		return
+		return Configuration{
+			WebAPIPort: 9090,
+		}
 	}
 
 	decoder := json.NewDecoder(file)
@@ -56,4 +58,6 @@ func LoadConfig(configFile string) {
 	} else {
 		web.ListenPort = configuration.WebAPIPort
 	}
+
+	return configuration
 }

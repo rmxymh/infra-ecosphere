@@ -246,13 +246,13 @@ func IPMI_APP_SetHandler(command int, handler IPMI_App_Handler) {
 func init() {
 	IPMIAppHandler.Unsupported = HandleIPMIUnsupportedAppCommand
 
+	IPMI_APP_SetHandler(IPMI_CMD_GET_DEVICE_ID, HandleIPMIGetDeviceID)
 	IPMI_APP_SetHandler(IPMI_CMD_GET_CHANNEL_AUTH_CAPABILITIES, HandleIPMIAuthenticationCapabilities)
 	IPMI_APP_SetHandler(IPMI_CMD_GET_SESSION_CHALLENGE, HandleIPMIGetSessionChallenge)
 	IPMI_APP_SetHandler(IPMI_CMD_ACTIVATE_SESSION, HandleIPMIActivateSession)
 	IPMI_APP_SetHandler(IPMI_CMD_SET_SESSION_PRIVILEGE, HandleIPMISetSessionPrivilegeLevel)
 	IPMI_APP_SetHandler(IPMI_CMD_CLOSE_SESSION, HandleIPMICloseSession)
 	
-	IPMI_APP_SetHandler(IPMI_CMD_GET_DEVICE_ID, HandleIPMIUnsupportedAppCommand)
 	IPMI_APP_SetHandler(IPMI_CMD_BROADCAST_GET_DEVICE_ID, HandleIPMIUnsupportedAppCommand)
 	IPMI_APP_SetHandler(IPMI_CMD_COLD_RESET, HandleIPMIUnsupportedAppCommand)
 	IPMI_APP_SetHandler(IPMI_CMD_WARM_RESET, HandleIPMIUnsupportedAppCommand)
@@ -362,6 +362,65 @@ func BuildResponseMessageTemplate(requestWrapper IPMISessionWrapper, requestMess
 func HandleIPMIUnsupportedAppCommand(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
 	log.Println("      IPMI App: This command is not supported currently, ignore.")
 }
+
+const (
+	FAKE_DEVICE_ID =		0xF0
+	FAKE_DEVICE_HAS_SDR =		0
+	FAKE_DEVICE_REVISION =		0x01
+	FAKE_FW_REVISION = 		0x01
+	FAKE_FW_MINOR_REVISION =	0x00
+	FAKE_IPMI_VERSION =		0x51	// 1.5
+)
+
+const (
+	ADDITIONAL_DEV_BITMASK_CHASSIS =	 	0x80
+	ADDITIONAL_DEV_BITMASK_BRIDGE =			0x40
+	ADDITIONAL_DEV_BITMASK_IPMB_EVT_GENERATOR =	0x20
+	ADDITIONAL_DEV_BITMASK_IPMB_EVT_RECEIVER =	0x10
+	ADDITIONAL_DEV_BITMASK_FRU_INVENTORY = 		0x08
+	ADDITIONAL_DEV_BITMASK_SEL = 			0x04
+	ADDITIONAL_DEV_BITMASK_SDR_REPOSITORY =		0x02
+	ADDITIONAL_DEV_BITMASK_SENSOR =			0x01
+)
+
+type IPMIGetDeviceIDResponse struct {
+	DeviceID		uint8
+	DeviceRevision		uint8
+	FirmwareRevision	uint8
+	FirmwareMinorRev	uint8
+	IPMIVersion		uint8
+	AdditionalDevSupport	uint8
+	ManufactureID		[3]uint8
+	ProductID		uint16
+	AuxiliaryFWRevisionInfo	[3]uint8
+}
+
+func HandleIPMIGetDeviceID(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
+	// prepare for response data
+	// We don't simulate OEM related behavior
+	response := IPMIGetDeviceIDResponse{}
+	response.DeviceID = FAKE_DEVICE_ID
+	response.DeviceRevision = uint8((FAKE_DEVICE_HAS_SDR << 7) | FAKE_DEVICE_REVISION)
+	response.FirmwareRevision = FAKE_FW_REVISION
+	response.FirmwareMinorRev = FAKE_FW_MINOR_REVISION
+	response.IPMIVersion = FAKE_IPMI_VERSION
+	response.AdditionalDevSupport |= (ADDITIONAL_DEV_BITMASK_CHASSIS)
+
+	dataBuf := bytes.Buffer{}
+	binary.Write(&dataBuf, binary.BigEndian, response)
+
+	responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_APP | IPMI_NETFN_RESPONSE), IPMI_CMD_GET_DEVICE_ID)
+	responseMessage.Data = dataBuf.Bytes()
+	rmcp := BuildUpRMCPForIPMI()
+
+	// serialize and send back
+	obuf := bytes.Buffer{}
+	SerializeRMCP(&obuf, rmcp)
+	SerializeIPMI(&obuf, responseWrapper, responseMessage)
+
+	server.WriteToUDP(obuf.Bytes(), addr)
+}
+
 
 type IPMIAuthenticationCapabilitiesRequest struct {
 	AutnticationTypeSupport uint8

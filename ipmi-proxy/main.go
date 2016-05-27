@@ -6,7 +6,8 @@ import (
 )
 
 func main() {
-	utils.LoadConfig("infra-ecosphere.cfg")
+	config := utils.LoadConfig("infra-ecosphere.cfg")
+	EcospherePort = config.WebAPIPort
 	ipmi.IPMI_CHASSIS_BOOT_OPTION_SetHandler(ipmi.BOOT_FLAG, SetBootDevice)
 	ipmi.IPMIServerServiceRun()
 }
