@@ -247,13 +247,13 @@ func init() {
 	IPMIAppHandler.Unsupported = HandleIPMIUnsupportedAppCommand
 
 	IPMI_APP_SetHandler(IPMI_CMD_GET_DEVICE_ID, HandleIPMIGetDeviceID)
+	IPMI_APP_SetHandler(IPMI_CMD_BROADCAST_GET_DEVICE_ID, HandleIPMIGetDeviceID)
 	IPMI_APP_SetHandler(IPMI_CMD_GET_CHANNEL_AUTH_CAPABILITIES, HandleIPMIAuthenticationCapabilities)
 	IPMI_APP_SetHandler(IPMI_CMD_GET_SESSION_CHALLENGE, HandleIPMIGetSessionChallenge)
 	IPMI_APP_SetHandler(IPMI_CMD_ACTIVATE_SESSION, HandleIPMIActivateSession)
 	IPMI_APP_SetHandler(IPMI_CMD_SET_SESSION_PRIVILEGE, HandleIPMISetSessionPrivilegeLevel)
 	IPMI_APP_SetHandler(IPMI_CMD_CLOSE_SESSION, HandleIPMICloseSession)
 	
-	IPMI_APP_SetHandler(IPMI_CMD_BROADCAST_GET_DEVICE_ID, HandleIPMIUnsupportedAppCommand)
 	IPMI_APP_SetHandler(IPMI_CMD_COLD_RESET, HandleIPMIUnsupportedAppCommand)
 	IPMI_APP_SetHandler(IPMI_CMD_WARM_RESET, HandleIPMIUnsupportedAppCommand)
 	IPMI_APP_SetHandler(IPMI_CMD_GET_SELF_TEST_RESULTS, HandleIPMIUnsupportedAppCommand)
