@@ -28,6 +28,12 @@ var routes = []Route {
 		"/api/BMCs/{bmcip}/power",
 		SetPowerStatus,
 	},
+	Route {
+		"SetBootDevice",
+		"PUT",
+		"/api/BMCs/{bmcip}/bootdev",
+		SetBootDevice,
+	},
 }
 
 

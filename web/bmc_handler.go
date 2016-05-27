@@ -11,6 +11,7 @@ import (
 	"strings"
 	"fmt"
 	"net"
+	"github.com/rmxymh/infra-ecosphere/vm"
 )
 
 type WebRespBMC struct {
@@ -71,16 +72,66 @@ func SetPowerStatus(writer http.ResponseWriter, request *http.Request) {
 			switch resp.Operation {
 			case "ON":
 				bmcobj.PowerOn()
+				resp.Status = "OK"
 			case "OFF":
 				bmcobj.PowerOff()
+				resp.Status = "OK"
 			case "SOFT":
 				bmcobj.PowerSoft()
+				resp.Status = "OK"
 			case "RESET":
 				bmcobj.PowerReset()
+				resp.Status = "OK"
 			case "CYCLE":
 				bmcobj.PowerReset()
+				resp.Status = "OK"
+			default:
+				resp.Status = fmt.Sprintf("Power Operation %s is not supported.", resp.Operation)
 			}
-			resp.Status = "OK"
+		}
+	}
+
+	json.NewEncoder(writer).Encode(resp)
+}
+
+type WebReqBootDev struct {
+	Device		string
+}
+
+type WebRespBootDev struct {
+	IP		string
+	Device		string
+	Status		string
+}
+
+func SetBootDevice(writer http.ResponseWriter, request *http.Request) {
+	vars := mux.Vars(request)
+	resp := WebRespBootDev{}
+	resp.IP = vars["bmcip"]
+
+	bmcobj, ok := bmc.GetBMC(net.ParseIP(resp.IP))
+	if ! ok {
+		resp.Status = fmt.Sprintf("BMC %s does not exist.", resp.IP)
+	} else {
+		bootDevReq := WebReqBootDev{}
+		err := json.NewDecoder(request.Body).Decode(&bootDevReq)
+
+		if err != nil {
+			resp.Status = "Unknown"
+			resp.Status = err.Error()
+		} else {
+			resp.Device = strings.ToUpper(bootDevReq.Device)
+			switch resp.Device {
+			case "PXE":
+				bmcobj.SetBootDev(vm.BOOT_DEVICE_PXE)
+				resp.Status = "OK"
+			case "DISK":
+				bmcobj.SetBootDev(vm.BOOT_DEVICE_DISK)
+				resp.Status = "OK"
+			default:
+				resp.Status = fmt.Sprintf("Device %s is not supported.", resp.Device)
+			}
+
 		}
 	}
 
