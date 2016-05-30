@@ -211,8 +211,7 @@ func HandleIPMIChassisControl(addr *net.UDPAddr, server *net.UDPConn, wrapper ip
 				_, err = DoPowerOperationRestCall(powerOpReq, localIP)
 			}
 
-			session.LocalSessionSequenceNumber += 1
-			session.RemoteSessionSequenceNumber += 1
+			session.Inc()
 
 			responseWrapper, responseMessage := ipmi.BuildResponseMessageTemplate(wrapper, message, (ipmi.IPMI_NETFN_CHASSIS | ipmi.IPMI_NETFN_RESPONSE), ipmi.IPMI_CMD_CHASSIS_CONTROL)
 			if err != nil {
