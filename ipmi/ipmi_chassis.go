@@ -170,7 +170,7 @@ func HandleIPMIGetChassisStatus(addr *net.UDPAddr, server *net.UDPConn, wrapper 
 			dataBuf := bytes.Buffer{}
 			binary.Write(&dataBuf, binary.LittleEndian, response)
 
-			responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_APP | IPMI_NETFN_RESPONSE), IPMI_CMD_GET_CHASSIS_STATUS)
+			responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_CHASSIS | IPMI_NETFN_RESPONSE), IPMI_CMD_GET_CHASSIS_STATUS)
 			responseMessage.Data = dataBuf.Bytes()
 
 			responseWrapper.SessionId = wrapper.SessionId

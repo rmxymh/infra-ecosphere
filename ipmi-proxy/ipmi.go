@@ -214,7 +214,7 @@ func HandleIPMIChassisControl(addr *net.UDPAddr, server *net.UDPConn, wrapper ip
 			session.LocalSessionSequenceNumber += 1
 			session.RemoteSessionSequenceNumber += 1
 
-			responseWrapper, responseMessage := ipmi.BuildResponseMessageTemplate(wrapper, message, (ipmi.IPMI_NETFN_APP | ipmi.IPMI_NETFN_RESPONSE), ipmi.IPMI_CMD_CHASSIS_CONTROL)
+			responseWrapper, responseMessage := ipmi.BuildResponseMessageTemplate(wrapper, message, (ipmi.IPMI_NETFN_CHASSIS | ipmi.IPMI_NETFN_RESPONSE), ipmi.IPMI_CMD_CHASSIS_CONTROL)
 			if err != nil {
 				responseMessage.CompletionCode = 0xD3
 			}
