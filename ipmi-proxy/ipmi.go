@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/rmxymh/infra-ecosphere/web"
 	"github.com/jmcvetta/napping"
+	"github.com/rmxymh/infra-ecosphere/bmc"
 )
 
 var EcosphereIP string = "10.0.2.2"
@@ -145,4 +146,88 @@ func SetBootDevice(addr *net.UDPAddr, server *net.UDPConn, wrapper ipmi.IPMISess
 	}
 
 	ipmi.SendIPMIChassisSetBootOptionResponseBack(addr, server, wrapper, message);
+}
+
+func DoPowerOperationRestCall(powerOpReq web.WebReqPowerOp, bmcIP string) (powerOpResp web.WebRespPowerOp, err error) {
+	baseAPI := fmt.Sprintf("http://%s:%d/api/BMCs/%s/power", EcosphereIP, EcospherePort, bmcIP)
+
+	resp, err := napping.Put(baseAPI, &powerOpReq, &powerOpResp, nil)
+	if err != nil {
+		log.Println("Failed to call ecophsere Web API for power operation: ", err.Error())
+	} else if resp.Status() != 200 {
+		log.Println("Failed to call ecosphere Web API for power operation: ", powerOpResp.Status)
+	}
+
+	return powerOpResp, err
+}
+
+func HandleIPMIChassisControl(addr *net.UDPAddr, server *net.UDPConn, wrapper ipmi.IPMISessionWrapper, message ipmi.IPMIMessage) {
+	buf := bytes.NewBuffer(message.Data)
+	request := ipmi.IPMIChassisControlRequest{}
+	binary.Read(buf, binary.BigEndian, &request)
+
+	session, ok := ipmi.GetSession(wrapper.SessionId)
+	if ! ok {
+		log.Printf("Unable to find session 0x%08x\n", wrapper.SessionId)
+	} else {
+		bmcUser := session.User
+		code := ipmi.GetAuthenticationCode(wrapper.AuthenticationType, bmcUser.Password, wrapper.SessionId, message, wrapper.SequenceNumber)
+		if bytes.Compare(wrapper.AuthenticationCode[:], code[:]) == 0 {
+			log.Println("      IPMI Authentication Pass.")
+		} else {
+			log.Println("      IPMI Authentication Failed.")
+		}
+
+		localIP := utils.GetLocalIP(server)
+		powerOpReq := web.WebReqPowerOp{
+			Operation: "ON",
+		}
+
+		var err error = nil
+		_, ok := bmc.GetBMC(net.ParseIP(localIP))
+		if ! ok {
+			log.Printf("BMC %s is not found\n", localIP)
+		} else {
+			switch request.ChassisControl {
+			case ipmi.CHASSIS_CONTROL_POWER_DOWN:
+				powerOpReq.Operation = "OFF"
+				_, err = DoPowerOperationRestCall(powerOpReq, localIP)
+
+			case ipmi.CHASSIS_CONTROL_POWER_UP:
+				powerOpReq.Operation = "ON"
+				_, err = DoPowerOperationRestCall(powerOpReq, localIP)
+
+			case ipmi.CHASSIS_CONTROL_POWER_CYCLE:
+				powerOpReq.Operation = "CYCLE"
+				_, err = DoPowerOperationRestCall(powerOpReq, localIP)
+
+			case ipmi.CHASSIS_CONTROL_HARD_RESET:
+				powerOpReq.Operation = "RESET"
+				_, err = DoPowerOperationRestCall(powerOpReq, localIP)
+			case ipmi.CHASSIS_CONTROL_PULSE:
+			// do nothing
+			case ipmi.CHASSIS_CONTROL_POWER_SOFT:
+				powerOpReq.Operation = "SOFT"
+				_, err = DoPowerOperationRestCall(powerOpReq, localIP)
+			}
+
+			session.LocalSessionSequenceNumber += 1
+			session.RemoteSessionSequenceNumber += 1
+
+			responseWrapper, responseMessage := ipmi.BuildResponseMessageTemplate(wrapper, message, (ipmi.IPMI_NETFN_APP | ipmi.IPMI_NETFN_RESPONSE), ipmi.IPMI_CMD_CHASSIS_CONTROL)
+			if err != nil {
+				responseMessage.CompletionCode = 0xD3
+			}
+
+			responseWrapper.SessionId = wrapper.SessionId
+			responseWrapper.SequenceNumber = session.RemoteSessionSequenceNumber
+			responseWrapper.AuthenticationCode = ipmi.GetAuthenticationCode(wrapper.AuthenticationType, bmcUser.Password, responseWrapper.SessionId, responseMessage, responseWrapper.SequenceNumber)
+			rmcp := ipmi.BuildUpRMCPForIPMI()
+
+			obuf := bytes.Buffer{}
+			ipmi.SerializeRMCP(&obuf, rmcp)
+			ipmi.SerializeIPMI(&obuf, responseWrapper, responseMessage)
+			server.WriteToUDP(obuf.Bytes(), addr)
+		}
+	}
 }
