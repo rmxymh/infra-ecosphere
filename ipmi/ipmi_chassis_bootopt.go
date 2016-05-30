@@ -122,7 +122,7 @@ type IPMIChassisBootOptionSetInProgressRequest struct {
 func HandleIPMIChassisBootOptionSetInProgress(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage, selector IPMIChassisBootOptionParameterSelector) {
 	buf := bytes.NewBuffer(selector.Parameters)
 	param := uint8(0)
-	binary.Read(buf, binary.BigEndian, &param)
+	binary.Read(buf, binary.LittleEndian, &param)
 	request := IPMIChassisBootOptionSetInProgressRequest{}
 	request.SetInProgressParameter = param & 0x03
 
@@ -166,7 +166,7 @@ type IPMIChassisBootOptionBootInfoReuqest struct {
 func HandleIPMIChassisBootOptionBootInfoAck(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage, selector IPMIChassisBootOptionParameterSelector) {
 	buf := bytes.NewBuffer(selector.Parameters)
 	request := IPMIChassisBootOptionBootInfoReuqest{}
-	binary.Read(buf, binary.BigEndian, &request)
+	binary.Read(buf, binary.LittleEndian, &request)
 
 	// Simulate: We just dump log but do nothing here.
 	if request.WriteMask & BOOT_INFO_ACK_BITMASK_WRITE_MASK_0 != 0 {
@@ -297,7 +297,7 @@ func HandleIPMIChassisBootOptionBootFlags(addr *net.UDPAddr, server *net.UDPConn
 
 	buf := bytes.NewBuffer(selector.Parameters)
 	request := IPMIChassisBootOptionBootFlags{}
-	binary.Read(buf, binary.BigEndian, &request)
+	binary.Read(buf, binary.LittleEndian, &request)
 
 	// Simulate: We just dump log but do nothing here.
 	if request.BootParam & BOOT_PARAM_BITMASK_VALID != 0 {
@@ -438,7 +438,7 @@ func IPMI_CHASSIS_SetBootOption_DeserializeAndExecute(addr *net.UDPAddr, server 
 	buf := bytes.NewBuffer(message.Data)
 	request := IPMIChassisBootOptionParameterSelector{}
 	selector := uint8(0x00)
-	binary.Read(buf, binary.BigEndian, &selector)
+	binary.Read(buf, binary.LittleEndian, &selector)
 
 	request.Validity = ((selector & 0x80) >> 7 != 0)
 	request.BootOptionParameterSelector = selector & 0x7f

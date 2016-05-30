@@ -55,11 +55,11 @@ func GetAuthenticationCodePICMG(authenticationType uint8, password string, sessi
 	copy(passwordBytes[:], password)
 
 	context := bytes.Buffer{}
-	binary.Write(&context, binary.BigEndian, passwordBytes)
-	binary.Write(&context, binary.BigEndian, sessionID)
-	binary.Write(&context, binary.BigEndian, message)
-	binary.Write(&context, binary.BigEndian, sessionSeq)
-	binary.Write(&context, binary.BigEndian, passwordBytes)
+	binary.Write(&context, binary.LittleEndian, passwordBytes)
+	binary.Write(&context, binary.LittleEndian, sessionID)
+	binary.Write(&context, binary.LittleEndian, message)
+	binary.Write(&context, binary.LittleEndian, sessionSeq)
+	binary.Write(&context, binary.LittleEndian, passwordBytes)
 
 	var code [16]byte
 	switch authenticationType {
@@ -82,7 +82,7 @@ func GetAuthenticationCodePICMG(authenticationType uint8, password string, sessi
 func HandleIPMIGroupExtATCAGetPICMGPropHandler(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
 	buf := bytes.NewBuffer(message.Data)
 	request := IPMIChassisControlRequest{}
-	binary.Read(buf, binary.BigEndian, &request)
+	binary.Read(buf, binary.LittleEndian, &request)
 
 	session, ok := GetSession(wrapper.SessionId)
 	if ! ok {
@@ -108,7 +108,7 @@ func HandleIPMIGroupExtATCAGetPICMGPropHandler(addr *net.UDPAddr, server *net.UD
 		obuf := bytes.Buffer{}
 		SerializeRMCP(&obuf, rmcp)
 		SerializeIPMISessionWrapper(&obuf, responseWrapper)
-		binary.Write(&obuf, binary.BigEndian, responseMessage)
+		binary.Write(&obuf, binary.LittleEndian, responseMessage)
 		server.WriteToUDP(obuf.Bytes(), addr)
 	}
 }

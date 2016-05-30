@@ -407,7 +407,7 @@ func HandleIPMIGetDeviceID(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMIS
 	response.AdditionalDevSupport |= (ADDITIONAL_DEV_BITMASK_CHASSIS)
 
 	dataBuf := bytes.Buffer{}
-	binary.Write(&dataBuf, binary.BigEndian, response)
+	binary.Write(&dataBuf, binary.LittleEndian, response)
 
 	responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_APP | IPMI_NETFN_RESPONSE), IPMI_CMD_GET_DEVICE_ID)
 	responseMessage.Data = dataBuf.Bytes()
@@ -439,7 +439,7 @@ type IPMIAuthenticationCapabilitiesResponse struct {
 func HandleIPMIAuthenticationCapabilities(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
 	buf := bytes.NewBuffer(message.Data)
 	request := IPMIAuthenticationCapabilitiesRequest{}
-	binary.Read(buf, binary.BigEndian, &request)
+	binary.Read(buf, binary.LittleEndian, &request)
 
 	// prepare for response data
 	// We don't simulate OEM related behavior
@@ -451,7 +451,7 @@ func HandleIPMIAuthenticationCapabilities(addr *net.UDPAddr, server *net.UDPConn
 	response.OEMAuxiliaryData = 0
 
 	dataBuf := bytes.Buffer{}
-	binary.Write(&dataBuf, binary.BigEndian, response)
+	binary.Write(&dataBuf, binary.LittleEndian, response)
 
 	responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_APP | IPMI_NETFN_RESPONSE), IPMI_CMD_GET_CHANNEL_AUTH_CAPABILITIES)
 	responseMessage.Data = dataBuf.Bytes()
@@ -478,7 +478,7 @@ type IPMIGetSessionChallengeResponse struct {
 func HandleIPMIGetSessionChallenge(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
 	buf := bytes.NewBuffer(message.Data)
 	request := IPMIGetSessionChallengeRequest{}
-	binary.Read(buf, binary.BigEndian, &request)
+	binary.Read(buf, binary.LittleEndian, &request)
 
 	obuf := bytes.Buffer{}
 
@@ -511,7 +511,7 @@ func HandleIPMIGetSessionChallenge(addr *net.UDPAddr, server *net.UDPConn, wrapp
 		responseChallenge.TempSessionID = session.SessionID
 		responseChallenge.Challenge = challengeCode
 		dataBuf := bytes.Buffer{}
-		binary.Write(&dataBuf, binary.BigEndian, responseChallenge)
+		binary.Write(&dataBuf, binary.LittleEndian, responseChallenge)
 
 		responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_APP | IPMI_NETFN_RESPONSE), IPMI_CMD_GET_SESSION_CHALLENGE)
 		responseMessage.Data = dataBuf.Bytes()
@@ -543,11 +543,11 @@ func GetAuthenticationCode(authenticationType uint8, password string, sessionID 
 	copy(passwordBytes[:], password)
 
 	context := bytes.Buffer{}
-	binary.Write(&context, binary.BigEndian, passwordBytes)
-	binary.Write(&context, binary.BigEndian, sessionID)
+	binary.Write(&context, binary.LittleEndian, passwordBytes)
+	binary.Write(&context, binary.LittleEndian, sessionID)
 	SerializeIPMIMessage(&context, message)
-	binary.Write(&context, binary.BigEndian, sessionSeq)
-	binary.Write(&context, binary.BigEndian, passwordBytes)
+	binary.Write(&context, binary.LittleEndian, sessionSeq)
+	binary.Write(&context, binary.LittleEndian, passwordBytes)
 
 	var code [16]byte
 	switch authenticationType {
@@ -570,7 +570,12 @@ func GetAuthenticationCode(authenticationType uint8, password string, sessionID 
 func HandleIPMIActivateSession(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
 	buf := bytes.NewBuffer(message.Data)
 	request := IPMIActivateSessionRequest{}
-	binary.Read(buf, binary.BigEndian, &request)
+	binary.Read(buf, binary.LittleEndian, &request.AuthenticationType)
+	binary.Read(buf, binary.LittleEndian, &request.RequestMaxPrivilegeLevel)
+	binary.Read(buf, binary.LittleEndian, &request.Challenge)
+	binary.Read(buf, binary.LittleEndian, &request.InitialOutboundSeq)
+
+	binary.Read(buf, binary.LittleEndian, &request)
 
 	//obuf := bytes.Buffer{}
 
@@ -597,7 +602,11 @@ func HandleIPMIActivateSession(addr *net.UDPAddr, server *net.UDPConn, wrapper I
 		response.MaxPrivilegeLevel = request.RequestMaxPrivilegeLevel
 
 		dataBuf := bytes.Buffer{}
-		binary.Write(&dataBuf, binary.BigEndian, response)
+		binary.Write(&dataBuf, binary.LittleEndian, response.AuthenticationType)
+		binary.Write(&dataBuf, binary.LittleEndian, response.SessionId)
+		binary.Write(&dataBuf, binary.LittleEndian, response.InitialOutboundSeq)
+		binary.Write(&dataBuf, binary.LittleEndian, response.MaxPrivilegeLevel)
+		//binary.Write(&dataBuf, binary.LittleEndian, response)
 
 		responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_APP | IPMI_NETFN_RESPONSE), IPMI_CMD_ACTIVATE_SESSION)
 		responseMessage.Data = dataBuf.Bytes()
@@ -624,7 +633,7 @@ type IPMISetSessionPrivilegeLevelResponse struct {
 func HandleIPMISetSessionPrivilegeLevel(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
 	buf := bytes.NewBuffer(message.Data)
 	request := IPMISetSessionPrivilegeLevelRequest{}
-	binary.Read(buf, binary.BigEndian, &request)
+	binary.Read(buf, binary.LittleEndian, &request)
 
 	//obuf := bytes.Buffer{}
 
@@ -647,7 +656,7 @@ func HandleIPMISetSessionPrivilegeLevel(addr *net.UDPAddr, server *net.UDPConn, 
 		response.NewPrivilegeLevel = request.RequestPrivilegeLevel
 
 		dataBuf := bytes.Buffer{}
-		binary.Write(&dataBuf, binary.BigEndian, response)
+		binary.Write(&dataBuf, binary.LittleEndian, response)
 
 		responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_APP | IPMI_NETFN_RESPONSE), IPMI_CMD_SET_SESSION_PRIVILEGE)
 		responseMessage.Data = dataBuf.Bytes()
@@ -670,7 +679,7 @@ type IPMICloseSessionRequest struct {
 func HandleIPMICloseSession(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
 	buf := bytes.NewBuffer(message.Data)
 	request := IPMICloseSessionRequest{}
-	binary.Read(buf, binary.BigEndian, &request)
+	binary.Read(buf, binary.LittleEndian, &request)
 
 	//obuf := bytes.Buffer{}
 

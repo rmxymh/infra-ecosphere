@@ -169,7 +169,7 @@ func HandleIPMIGetChassisStatus(addr *net.UDPAddr, server *net.UDPConn, wrapper 
 			response.FrontPanelButtonCapabilities = 0
 
 			dataBuf := bytes.Buffer{}
-			binary.Write(&dataBuf, binary.BigEndian, response)
+			binary.Write(&dataBuf, binary.LittleEndian, response)
 
 			responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_APP | IPMI_NETFN_RESPONSE), IPMI_CMD_GET_CHASSIS_STATUS)
 			responseMessage.Data = dataBuf.Bytes()
@@ -202,7 +202,7 @@ const (
 func HandleIPMIChassisControl(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
 	buf := bytes.NewBuffer(message.Data)
 	request := IPMIChassisControlRequest{}
-	binary.Read(buf, binary.BigEndian, &request)
+	binary.Read(buf, binary.LittleEndian, &request)
 
 	session, ok := GetSession(wrapper.SessionId)
 	if ! ok {

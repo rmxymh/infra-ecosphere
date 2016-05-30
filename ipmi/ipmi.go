@@ -50,40 +50,40 @@ func DeserializeIPMI(buf io.Reader)  (length uint32, wrapper IPMISessionWrapper,
 	length = 0
 	wrapperLength := uint32(0)
 
-	binary.Read(buf, binary.BigEndian, &wrapper.AuthenticationType)
+	binary.Read(buf, binary.LittleEndian, &wrapper.AuthenticationType)
 	wrapperLength += uint32(unsafe.Sizeof(wrapper.AuthenticationType))
-	binary.Read(buf, binary.BigEndian, &wrapper.SequenceNumber)
+	binary.Read(buf, binary.LittleEndian, &wrapper.SequenceNumber)
 	wrapperLength += uint32(unsafe.Sizeof(wrapper.SequenceNumber))
-	binary.Read(buf, binary.BigEndian, &wrapper.SessionId)
+	binary.Read(buf, binary.LittleEndian, &wrapper.SessionId)
 	wrapperLength += uint32(unsafe.Sizeof(wrapper.SessionId))
 	if wrapper.SessionId != 0x00 {
-		binary.Read(buf, binary.BigEndian, &wrapper.AuthenticationCode)
+		binary.Read(buf, binary.LittleEndian, &wrapper.AuthenticationCode)
 		wrapperLength += uint32(unsafe.Sizeof(wrapper.AuthenticationCode))
 	}
-	binary.Read(buf, binary.BigEndian, &wrapper.MessageLen)
+	binary.Read(buf, binary.LittleEndian, &wrapper.MessageLen)
 	wrapperLength += uint32(unsafe.Sizeof(wrapper.MessageLen))
 	length += wrapperLength
 
 	messageHeaderLength := uint32(0)
-	binary.Read(buf, binary.BigEndian, &message.TargetAddress)
+	binary.Read(buf, binary.LittleEndian, &message.TargetAddress)
 	messageHeaderLength += uint32(unsafe.Sizeof(message.TargetAddress))
-	binary.Read(buf, binary.BigEndian, &message.TargetLun)
+	binary.Read(buf, binary.LittleEndian, &message.TargetLun)
 	messageHeaderLength += uint32(unsafe.Sizeof(message.TargetLun))
-	binary.Read(buf, binary.BigEndian, &message.Checksum)
+	binary.Read(buf, binary.LittleEndian, &message.Checksum)
 	messageHeaderLength += uint32(unsafe.Sizeof(message.Checksum))
-	binary.Read(buf, binary.BigEndian, &message.SourceAddress)
+	binary.Read(buf, binary.LittleEndian, &message.SourceAddress)
 	messageHeaderLength += uint32(unsafe.Sizeof(message.SourceAddress))
-	binary.Read(buf, binary.BigEndian, &message.SourceLun)
+	binary.Read(buf, binary.LittleEndian, &message.SourceLun)
 	messageHeaderLength += uint32(unsafe.Sizeof(message.SourceLun))
-	binary.Read(buf, binary.BigEndian, &message.Command)
+	binary.Read(buf, binary.LittleEndian, &message.Command)
 	messageHeaderLength += uint32(unsafe.Sizeof(message.Command))
 
 	dataLen := wrapper.MessageLen - uint8(messageHeaderLength) - 1
 	if dataLen > 0 {
 		message.Data = make([]uint8, dataLen, dataLen)
-		binary.Read(buf, binary.BigEndian, &message.Data)
+		binary.Read(buf, binary.LittleEndian, &message.Data)
 	}
-	binary.Read(buf, binary.BigEndian, &message.DataChecksum)
+	binary.Read(buf, binary.LittleEndian, &message.DataChecksum)
 	messageHeaderLength += uint32(unsafe.Sizeof(message.DataChecksum))
 	length += uint32(wrapper.MessageLen)
 
@@ -100,27 +100,27 @@ func isNetFunctionResponse(targetLun uint8) bool {
 }
 
 func SerializeIPMISessionWrapper(buf *bytes.Buffer, wrapper IPMISessionWrapper) {
-	binary.Write(buf, binary.BigEndian, wrapper.AuthenticationType)
-	binary.Write(buf, binary.BigEndian, wrapper.SequenceNumber)
-	binary.Write(buf, binary.BigEndian, wrapper.SessionId)
+	binary.Write(buf, binary.LittleEndian, wrapper.AuthenticationType)
+	binary.Write(buf, binary.LittleEndian, wrapper.SequenceNumber)
+	binary.Write(buf, binary.LittleEndian, wrapper.SessionId)
 	if wrapper.SessionId != 0 {
-		binary.Write(buf, binary.BigEndian, wrapper.AuthenticationCode)
+		binary.Write(buf, binary.LittleEndian, wrapper.AuthenticationCode)
 	}
-	binary.Write(buf, binary.BigEndian, wrapper.MessageLen)
+	binary.Write(buf, binary.LittleEndian, wrapper.MessageLen)
 }
 
 func SerializeIPMIMessage(buf *bytes.Buffer, message IPMIMessage) {
-	binary.Write(buf, binary.BigEndian, message.TargetAddress)
-	binary.Write(buf, binary.BigEndian, message.TargetLun)
-	binary.Write(buf, binary.BigEndian, message.Checksum)
-	binary.Write(buf, binary.BigEndian, message.SourceAddress)
-	binary.Write(buf, binary.BigEndian, message.SourceLun)
-	binary.Write(buf, binary.BigEndian, message.Command)
+	binary.Write(buf, binary.LittleEndian, message.TargetAddress)
+	binary.Write(buf, binary.LittleEndian, message.TargetLun)
+	binary.Write(buf, binary.LittleEndian, message.Checksum)
+	binary.Write(buf, binary.LittleEndian, message.SourceAddress)
+	binary.Write(buf, binary.LittleEndian, message.SourceLun)
+	binary.Write(buf, binary.LittleEndian, message.Command)
 	if isNetFunctionResponse(message.TargetLun) {
-		binary.Write(buf, binary.BigEndian, message.CompletionCode)
+		binary.Write(buf, binary.LittleEndian, message.CompletionCode)
 	}
 	buf.Write(message.Data)
-	binary.Write(buf, binary.BigEndian, message.DataChecksum)
+	binary.Write(buf, binary.LittleEndian, message.DataChecksum)
 }
 
 func SerializeIPMI(buf *bytes.Buffer, wrapper IPMISessionWrapper, message IPMIMessage, bmcpass string) {

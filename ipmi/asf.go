@@ -30,30 +30,30 @@ const (
 func DeserializeASF(buf io.Reader)  (length uint32, header AlertStandardFormat) {
 	length = 0
 
-	binary.Read(buf, binary.BigEndian, &header.IANA)
+	binary.Read(buf, binary.LittleEndian, &header.IANA)
 	length += uint32(unsafe.Sizeof(header.IANA))
-	binary.Read(buf, binary.BigEndian, &header.MessageType)
+	binary.Read(buf, binary.LittleEndian, &header.MessageType)
 	length += uint32(unsafe.Sizeof(header.MessageType))
-	binary.Read(buf, binary.BigEndian, &header.MessageTag)
+	binary.Read(buf, binary.LittleEndian, &header.MessageTag)
 	length += uint32(unsafe.Sizeof(header.MessageTag))
-	binary.Read(buf, binary.BigEndian, &header.Reserved)
+	binary.Read(buf, binary.LittleEndian, &header.Reserved)
 	length += uint32(unsafe.Sizeof(header.Reserved))
-	binary.Read(buf, binary.BigEndian, &header.DataLen)
+	binary.Read(buf, binary.LittleEndian, &header.DataLen)
 	length += uint32(unsafe.Sizeof(header.DataLen))
 
 	header.Data = make([]uint8, header.DataLen, header.DataLen)
-	binary.Read(buf, binary.BigEndian, &header.Data)
+	binary.Read(buf, binary.LittleEndian, &header.Data)
 	length += uint32(header.DataLen)
 
 	return length, header
 }
 
 func SerializeASF(buf *bytes.Buffer, header AlertStandardFormat) {
-	binary.Write(buf, binary.BigEndian, header.IANA)
-	binary.Write(buf, binary.BigEndian, header.MessageType)
-	binary.Write(buf, binary.BigEndian, header.MessageTag)
-	binary.Write(buf, binary.BigEndian, header.Reserved)
-	binary.Write(buf, binary.BigEndian, header.DataLen)
+	binary.Write(buf, binary.LittleEndian, header.IANA)
+	binary.Write(buf, binary.LittleEndian, header.MessageType)
+	binary.Write(buf, binary.LittleEndian, header.MessageTag)
+	binary.Write(buf, binary.LittleEndian, header.Reserved)
+	binary.Write(buf, binary.LittleEndian, header.DataLen)
 	buf.Write(header.Data)
 }
 

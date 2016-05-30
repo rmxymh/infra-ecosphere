@@ -27,14 +27,14 @@ const (
 )
 
 func DeserializeRMCP(buf io.Reader)  (length uint32, header RemoteManagementControlProtocol) {
-	binary.Read(buf, binary.BigEndian, &header)
+	binary.Read(buf, binary.LittleEndian, &header)
 	length += uint32(unsafe.Sizeof(header))
 
 	return length, header
 }
 
 func SerializeRMCP(buf *bytes.Buffer, header RemoteManagementControlProtocol) {
-	binary.Write(buf, binary.BigEndian, header)
+	binary.Write(buf, binary.LittleEndian, header)
 }
 
 func RMCPDeserializeAndExecute(buf io.Reader, addr *net.UDPAddr, server *net.UDPConn) {
