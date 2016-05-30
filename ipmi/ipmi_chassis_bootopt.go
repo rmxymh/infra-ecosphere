@@ -88,8 +88,7 @@ func SendIPMIChassisSetBootOptionResponseBack(addr *net.UDPAddr, server *net.UDP
 			log.Println("        IPMI Authentication Failed.")
 		}
 
-		session.LocalSessionSequenceNumber += 1
-		session.RemoteSessionSequenceNumber += 1
+		session.Inc()
 
 		responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_APP | IPMI_NETFN_RESPONSE), IPMI_CMD_SET_SYSTEM_BOOT_OPTIONS)
 

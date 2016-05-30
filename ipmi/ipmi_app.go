@@ -591,8 +591,7 @@ func HandleIPMIActivateSession(addr *net.UDPAddr, server *net.UDPConn, wrapper I
 			log.Println("      IPMI Authentication Failed.")
 		}
 
-		session.RemoteSessionSequenceNumber = request.InitialOutboundSeq
-		session.LocalSessionSequenceNumber = 0
+		session.Inc()
 
 		response := IPMIActivateSessionResponse{}
 		response.AuthenticationType = request.AuthenticationType
@@ -649,8 +648,7 @@ func HandleIPMISetSessionPrivilegeLevel(addr *net.UDPAddr, server *net.UDPConn, 
 			log.Println("      IPMI Authentication Failed.")
 		}
 
-		session.LocalSessionSequenceNumber += 1
-		session.RemoteSessionSequenceNumber += 1
+		session.Inc()
 
 		response := IPMISetSessionPrivilegeLevelResponse{}
 		response.NewPrivilegeLevel = request.RequestPrivilegeLevel
@@ -695,10 +693,7 @@ func HandleIPMICloseSession(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMI
 			log.Println("      IPMI Authentication Failed.")
 		}
 
-		RemoveSession(request.SessionID)
-
-		session.LocalSessionSequenceNumber += 1
-		session.RemoteSessionSequenceNumber += 1
+		session.Inc()
 
 		responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_APP | IPMI_NETFN_RESPONSE), IPMI_CMD_CLOSE_SESSION)
 
@@ -710,6 +705,7 @@ func HandleIPMICloseSession(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMI
 		SerializeRMCP(&obuf, rmcp)
 		SerializeIPMI(&obuf, responseWrapper, responseMessage, bmcUser.Password)
 		server.WriteToUDP(obuf.Bytes(), addr)
+		RemoveSession(request.SessionID)
 	}
 }
 

@@ -52,3 +52,13 @@ func RemoveSession(id uint32) {
 		delete(ipmiSessions, id)
 	}
 }
+
+func (session *IPMISession)Inc() {
+	session.LocalSessionSequenceNumber += 1
+	session.RemoteSessionSequenceNumber += 1
+	session.Save()
+}
+
+func (session *IPMISession)Save() {
+	ipmiSessions[session.SessionID] = *session
+}

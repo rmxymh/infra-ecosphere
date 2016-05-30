@@ -157,8 +157,7 @@ func HandleIPMIGetChassisStatus(addr *net.UDPAddr, server *net.UDPConn, wrapper 
 		if ! ok {
 			log.Printf("BMC %s is not found\n", localIP)
 		} else {
-			session.LocalSessionSequenceNumber += 1
-			session.RemoteSessionSequenceNumber += 1
+			session.Inc()
 
 			response := IPMIGetChassisStatusResponse{}
 			if bmc.VM.IsRunning() {
@@ -238,8 +237,7 @@ func HandleIPMIChassisControl(addr *net.UDPAddr, server *net.UDPConn, wrapper IP
 				bmc.PowerSoft()
 			}
 
-			session.LocalSessionSequenceNumber += 1
-			session.RemoteSessionSequenceNumber += 1
+			session.Inc()
 
 			responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_APP | IPMI_NETFN_RESPONSE), IPMI_CMD_CHASSIS_CONTROL)
 
