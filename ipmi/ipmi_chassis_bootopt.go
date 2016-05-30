@@ -23,7 +23,7 @@ const (
 
 type IPMI_Chassis_BootOpt_Handler func(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage, selector IPMIChassisBootOptionParameterSelector)
 
-type IPMIChassisBootOptHandlerSet struct {
+type IPMIChassisSetBootOptHandlerSet struct {
 	SetInProgressHandler			IPMI_Chassis_BootOpt_Handler
 	ServicePartitionSelectorHandler		IPMI_Chassis_BootOpt_Handler
 	ServicePartitionScanHandler		IPMI_Chassis_BootOpt_Handler
@@ -35,41 +35,86 @@ type IPMIChassisBootOptHandlerSet struct {
 	Unsupported				IPMI_Chassis_BootOpt_Handler
 }
 
-var IPMIChassisBootOptHandler IPMIChassisBootOptHandlerSet = IPMIChassisBootOptHandlerSet{}
+type IPMIChassisGetBootOptHandlerSet struct {
+	SetInProgressHandler			IPMI_Chassis_BootOpt_Handler
+	ServicePartitionSelectorHandler		IPMI_Chassis_BootOpt_Handler
+	ServicePartitionScanHandler		IPMI_Chassis_BootOpt_Handler
+	BMCBootFlagValidBitClearingHandler	IPMI_Chassis_BootOpt_Handler
+	BootInfoAcknowledgementHandler		IPMI_Chassis_BootOpt_Handler
+	BootFlagHandler				IPMI_Chassis_BootOpt_Handler
+	BootInitiatorInfoHandler		IPMI_Chassis_BootOpt_Handler
+	BootInitiatorMailbox			IPMI_Chassis_BootOpt_Handler
+	Unsupported				IPMI_Chassis_BootOpt_Handler
+}
 
-func IPMI_CHASSIS_BOOT_OPTION_SetHandler(command int, handler IPMI_Chassis_BootOpt_Handler) {
+var IPMIChassisSetBootOptHandler IPMIChassisSetBootOptHandlerSet = IPMIChassisSetBootOptHandlerSet{}
+var IPMIChassisGetBootOptHandler IPMIChassisGetBootOptHandlerSet = IPMIChassisGetBootOptHandlerSet{}
+
+func IPMI_CHASSIS_SET_BOOT_OPTION_SetHandler(command int, handler IPMI_Chassis_BootOpt_Handler) {
 	switch command {
 	case BOOT_SET_IN_PROGRESS:
-		IPMIChassisBootOptHandler.SetInProgressHandler = handler
+		IPMIChassisSetBootOptHandler.SetInProgressHandler = handler
 	case BOOT_SERVICE_PARTITION_SELECTOR:
-		IPMIChassisBootOptHandler.ServicePartitionSelectorHandler = handler
+		IPMIChassisSetBootOptHandler.ServicePartitionSelectorHandler = handler
 	case BOOT_SERVICE_PARTITION_SCAN:
-		IPMIChassisBootOptHandler.ServicePartitionScanHandler = handler
+		IPMIChassisSetBootOptHandler.ServicePartitionScanHandler = handler
 	case BOOT_BMC_BOOT_FLAG_VALID_BIT_CLEARING:
-		IPMIChassisBootOptHandler.BMCBootFlagValidBitClearingHandler = handler
+		IPMIChassisSetBootOptHandler.BMCBootFlagValidBitClearingHandler = handler
 	case BOOT_INFO_ACK:
-		IPMIChassisBootOptHandler.BootInfoAcknowledgementHandler = handler
+		IPMIChassisSetBootOptHandler.BootInfoAcknowledgementHandler = handler
 	case BOOT_FLAG:
-		IPMIChassisBootOptHandler.BootFlagHandler = handler
+		IPMIChassisSetBootOptHandler.BootFlagHandler = handler
 	case BOOT_INITIATOR_INFO:
-		IPMIChassisBootOptHandler.BootInitiatorInfoHandler = handler
+		IPMIChassisSetBootOptHandler.BootInitiatorInfoHandler = handler
 	case BOOT_INITIATOR_MAILBOX:
-		IPMIChassisBootOptHandler.BootInitiatorMailbox = handler
+		IPMIChassisSetBootOptHandler.BootInitiatorMailbox = handler
+	}
+}
+
+func IPMI_CHASSIS_GET_BOOT_OPTION_SetHandler(command int, handler IPMI_Chassis_BootOpt_Handler) {
+	switch command {
+	case BOOT_SET_IN_PROGRESS:
+		IPMIChassisGetBootOptHandler.SetInProgressHandler = handler
+	case BOOT_SERVICE_PARTITION_SELECTOR:
+		IPMIChassisGetBootOptHandler.ServicePartitionSelectorHandler = handler
+	case BOOT_SERVICE_PARTITION_SCAN:
+		IPMIChassisGetBootOptHandler.ServicePartitionScanHandler = handler
+	case BOOT_BMC_BOOT_FLAG_VALID_BIT_CLEARING:
+		IPMIChassisGetBootOptHandler.BMCBootFlagValidBitClearingHandler = handler
+	case BOOT_INFO_ACK:
+		IPMIChassisGetBootOptHandler.BootInfoAcknowledgementHandler = handler
+	case BOOT_FLAG:
+		IPMIChassisGetBootOptHandler.BootFlagHandler = handler
+	case BOOT_INITIATOR_INFO:
+		IPMIChassisGetBootOptHandler.BootInitiatorInfoHandler = handler
+	case BOOT_INITIATOR_MAILBOX:
+		IPMIChassisGetBootOptHandler.BootInitiatorMailbox = handler
 	}
 }
 
 func init() {
-	IPMIChassisBootOptHandler.Unsupported = HandleIPMIChassisBootOptionNotSupport
+	IPMIChassisSetBootOptHandler.Unsupported = HandleIPMIChassisBootOptionNotSupport
+	IPMIChassisGetBootOptHandler.Unsupported = HandleIPMIChassisBootOptionNotSupport
 
-	IPMI_CHASSIS_BOOT_OPTION_SetHandler(BOOT_SET_IN_PROGRESS, HandleIPMIChassisBootOptionSetInProgress)
-	IPMI_CHASSIS_BOOT_OPTION_SetHandler(BOOT_INFO_ACK, HandleIPMIChassisBootOptionBootInfoAck)
-	IPMI_CHASSIS_BOOT_OPTION_SetHandler(BOOT_FLAG, HandleIPMIChassisBootOptionBootFlags)
+	IPMI_CHASSIS_SET_BOOT_OPTION_SetHandler(BOOT_SET_IN_PROGRESS, HandleIPMIChassisSetBootOptionSetInProgress)
+	IPMI_CHASSIS_SET_BOOT_OPTION_SetHandler(BOOT_INFO_ACK, HandleIPMIChassisSetBootOptionBootInfoAck)
+	IPMI_CHASSIS_SET_BOOT_OPTION_SetHandler(BOOT_FLAG, HandleIPMIChassisSetBootOptionBootFlags)
 
-	IPMI_CHASSIS_BOOT_OPTION_SetHandler(BOOT_SERVICE_PARTITION_SELECTOR, HandleIPMIChassisBootOptionNotSupport)
-	IPMI_CHASSIS_BOOT_OPTION_SetHandler(BOOT_SERVICE_PARTITION_SCAN, HandleIPMIChassisBootOptionNotSupport)
-	IPMI_CHASSIS_BOOT_OPTION_SetHandler(BOOT_BMC_BOOT_FLAG_VALID_BIT_CLEARING, HandleIPMIChassisBootOptionNotSupport)
-	IPMI_CHASSIS_BOOT_OPTION_SetHandler(BOOT_INITIATOR_INFO, HandleIPMIChassisBootOptionNotSupport)
-	IPMI_CHASSIS_BOOT_OPTION_SetHandler(BOOT_INITIATOR_MAILBOX, HandleIPMIChassisBootOptionNotSupport)
+	IPMI_CHASSIS_SET_BOOT_OPTION_SetHandler(BOOT_SERVICE_PARTITION_SELECTOR, HandleIPMIChassisBootOptionNotSupport)
+	IPMI_CHASSIS_SET_BOOT_OPTION_SetHandler(BOOT_SERVICE_PARTITION_SCAN, HandleIPMIChassisBootOptionNotSupport)
+	IPMI_CHASSIS_SET_BOOT_OPTION_SetHandler(BOOT_BMC_BOOT_FLAG_VALID_BIT_CLEARING, HandleIPMIChassisBootOptionNotSupport)
+	IPMI_CHASSIS_SET_BOOT_OPTION_SetHandler(BOOT_INITIATOR_INFO, HandleIPMIChassisBootOptionNotSupport)
+	IPMI_CHASSIS_SET_BOOT_OPTION_SetHandler(BOOT_INITIATOR_MAILBOX, HandleIPMIChassisBootOptionNotSupport)
+
+	IPMI_CHASSIS_GET_BOOT_OPTION_SetHandler(BOOT_FLAG, HandleIPMIChassisGetBootOptionBootFlags)
+
+	IPMI_CHASSIS_GET_BOOT_OPTION_SetHandler(BOOT_SET_IN_PROGRESS, HandleIPMIChassisBootOptionNotSupport)
+	IPMI_CHASSIS_GET_BOOT_OPTION_SetHandler(BOOT_INFO_ACK, HandleIPMIChassisBootOptionNotSupport)
+	IPMI_CHASSIS_GET_BOOT_OPTION_SetHandler(BOOT_SERVICE_PARTITION_SELECTOR, HandleIPMIChassisBootOptionNotSupport)
+	IPMI_CHASSIS_GET_BOOT_OPTION_SetHandler(BOOT_SERVICE_PARTITION_SCAN, HandleIPMIChassisBootOptionNotSupport)
+	IPMI_CHASSIS_GET_BOOT_OPTION_SetHandler(BOOT_BMC_BOOT_FLAG_VALID_BIT_CLEARING, HandleIPMIChassisBootOptionNotSupport)
+	IPMI_CHASSIS_GET_BOOT_OPTION_SetHandler(BOOT_INITIATOR_INFO, HandleIPMIChassisBootOptionNotSupport)
+	IPMI_CHASSIS_GET_BOOT_OPTION_SetHandler(BOOT_INITIATOR_MAILBOX, HandleIPMIChassisBootOptionNotSupport)
 }
 
 
@@ -90,7 +135,7 @@ func SendIPMIChassisSetBootOptionResponseBack(addr *net.UDPAddr, server *net.UDP
 
 		session.Inc()
 
-		responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_APP | IPMI_NETFN_RESPONSE), IPMI_CMD_SET_SYSTEM_BOOT_OPTIONS)
+		responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_CHASSIS | IPMI_NETFN_RESPONSE), IPMI_CMD_SET_SYSTEM_BOOT_OPTIONS)
 
 		responseWrapper.SessionId = wrapper.SessionId
 		responseWrapper.SequenceNumber = session.RemoteSessionSequenceNumber
@@ -118,7 +163,7 @@ type IPMIChassisBootOptionSetInProgressRequest struct {
 	SetInProgressParameter	uint8
 }
 
-func HandleIPMIChassisBootOptionSetInProgress(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage, selector IPMIChassisBootOptionParameterSelector) {
+func HandleIPMIChassisSetBootOptionSetInProgress(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage, selector IPMIChassisBootOptionParameterSelector) {
 	buf := bytes.NewBuffer(selector.Parameters)
 	param := uint8(0)
 	binary.Read(buf, binary.LittleEndian, &param)
@@ -162,7 +207,7 @@ type IPMIChassisBootOptionBootInfoReuqest struct {
 	BootInitiatorAckData	uint8
 }
 
-func HandleIPMIChassisBootOptionBootInfoAck(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage, selector IPMIChassisBootOptionParameterSelector) {
+func HandleIPMIChassisSetBootOptionBootInfoAck(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage, selector IPMIChassisBootOptionParameterSelector) {
 	buf := bytes.NewBuffer(selector.Parameters)
 	request := IPMIChassisBootOptionBootInfoReuqest{}
 	binary.Read(buf, binary.LittleEndian, &request)
@@ -278,7 +323,7 @@ const (
 	BOOT_BIOS_SHARED_MUX_TO_SYSTEM =	0x02
 )
 
-type IPMIChassisBootOptionBootFlags struct {
+type IPMIChassisSetBootOptionBootFlags struct {
 	BootParam	uint8
 	BootDevice	uint8
 	BIOSVerbosity	uint8
@@ -286,7 +331,7 @@ type IPMIChassisBootOptionBootFlags struct {
 	Reserved	uint8
 }
 
-func HandleIPMIChassisBootOptionBootFlags(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage, selector IPMIChassisBootOptionParameterSelector) {
+func HandleIPMIChassisSetBootOptionBootFlags(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage, selector IPMIChassisBootOptionParameterSelector) {
 	localIP := utils.GetLocalIP(server)
 	bmc, ok := bmc.GetBMC(net.ParseIP(localIP))
 	if ! ok {
@@ -295,7 +340,7 @@ func HandleIPMIChassisBootOptionBootFlags(addr *net.UDPAddr, server *net.UDPConn
 	}
 
 	buf := bytes.NewBuffer(selector.Parameters)
-	request := IPMIChassisBootOptionBootFlags{}
+	request := IPMIChassisSetBootOptionBootFlags{}
 	binary.Read(buf, binary.LittleEndian, &request)
 
 	// Simulate: We just dump log but do nothing here.
@@ -445,20 +490,101 @@ func IPMI_CHASSIS_SetBootOption_DeserializeAndExecute(addr *net.UDPAddr, server 
 
 	switch request.BootOptionParameterSelector {
 	case BOOT_SET_IN_PROGRESS:
-		IPMIChassisBootOptHandler.SetInProgressHandler(addr, server, wrapper, message, request)
+		IPMIChassisSetBootOptHandler.SetInProgressHandler(addr, server, wrapper, message, request)
 	case BOOT_SERVICE_PARTITION_SELECTOR:
-		IPMIChassisBootOptHandler.ServicePartitionSelectorHandler(addr, server, wrapper, message, request)
+		IPMIChassisSetBootOptHandler.ServicePartitionSelectorHandler(addr, server, wrapper, message, request)
 	case BOOT_SERVICE_PARTITION_SCAN:
-		IPMIChassisBootOptHandler.ServicePartitionScanHandler(addr, server, wrapper, message, request)
+		IPMIChassisSetBootOptHandler.ServicePartitionScanHandler(addr, server, wrapper, message, request)
 	case BOOT_BMC_BOOT_FLAG_VALID_BIT_CLEARING:
-		IPMIChassisBootOptHandler.BMCBootFlagValidBitClearingHandler(addr, server, wrapper, message, request)
+		IPMIChassisSetBootOptHandler.BMCBootFlagValidBitClearingHandler(addr, server, wrapper, message, request)
 	case BOOT_INFO_ACK:
-		IPMIChassisBootOptHandler.BootInfoAcknowledgementHandler(addr, server, wrapper, message, request)
+		IPMIChassisSetBootOptHandler.BootInfoAcknowledgementHandler(addr, server, wrapper, message, request)
 	case BOOT_FLAG:
-		IPMIChassisBootOptHandler.BootFlagHandler(addr, server, wrapper, message, request)
+		IPMIChassisSetBootOptHandler.BootFlagHandler(addr, server, wrapper, message, request)
 	case BOOT_INITIATOR_INFO:
-		IPMIChassisBootOptHandler.BootInitiatorInfoHandler(addr, server, wrapper, message, request)
+		IPMIChassisSetBootOptHandler.BootInitiatorInfoHandler(addr, server, wrapper, message, request)
 	case BOOT_INITIATOR_MAILBOX:
-		IPMIChassisBootOptHandler.BootInitiatorMailbox(addr, server, wrapper, message, request)
+		IPMIChassisSetBootOptHandler.BootInitiatorMailbox(addr, server, wrapper, message, request)
+	}
+}
+
+type IPMIChassisGetBootOptionBootFlags struct {
+	ParamVersion	uint8
+	BootOptSelector	uint8
+	BootParam	uint8
+	BootDevice	uint8
+	BIOSVerbosity	uint8
+	BIOSSharedMode	uint8
+	Reserved	uint8
+}
+
+func HandleIPMIChassisGetBootOptionBootFlags(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage, selector IPMIChassisBootOptionParameterSelector) {
+	session, ok := GetSession(wrapper.SessionId)
+	if ! ok {
+		log.Printf("        IPMI CHASSIS SET BOOT OPTION: Unable to find session 0x%08x\n", wrapper.SessionId)
+	} else {
+		bmcUser := session.User
+		code := GetAuthenticationCode(wrapper.AuthenticationType, bmcUser.Password, wrapper.SessionId, message, wrapper.SequenceNumber)
+		if bytes.Compare(wrapper.AuthenticationCode[:], code[:]) == 0 {
+			log.Println("        IPMI Authentication Pass.")
+		} else {
+			log.Println("        IPMI Authentication Failed.")
+		}
+
+		session.Inc()
+
+		data := IPMIChassisGetBootOptionBootFlags{}
+		data.ParamVersion = 0x01
+		data.BootOptSelector = BOOT_FLAG
+		data.BootParam = 0
+		data.BootDevice = 0
+		data.BIOSVerbosity = 0
+		data.BIOSSharedMode = 0
+		data.Reserved = 0
+
+		dbuf := bytes.Buffer{}
+		binary.Write(&dbuf, binary.LittleEndian, data)
+
+		responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_CHASSIS | IPMI_NETFN_RESPONSE), IPMI_CMD_SET_SYSTEM_BOOT_OPTIONS)
+		responseMessage.Data = dbuf.Bytes()
+
+		responseWrapper.SessionId = wrapper.SessionId
+		responseWrapper.SequenceNumber = session.RemoteSessionSequenceNumber
+		rmcp := BuildUpRMCPForIPMI()
+
+		obuf := bytes.Buffer{}
+		SerializeRMCP(&obuf, rmcp)
+		SerializeIPMI(&obuf, responseWrapper, responseMessage, bmcUser.Password)
+		server.WriteToUDP(obuf.Bytes(), addr)
+	}
+}
+
+func IPMI_CHASSIS_GetBootOption_DeserializeAndExecute(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage) {
+	buf := bytes.NewBuffer(message.Data)
+	request := IPMIChassisBootOptionParameterSelector{}
+	selector := uint8(0x00)
+	binary.Read(buf, binary.LittleEndian, &selector)
+
+	request.Validity = ((selector & 0x80) >> 7 != 0)
+	request.BootOptionParameterSelector = selector & 0x7f
+	request.Parameters = message.Data[1:]
+
+	switch request.BootOptionParameterSelector {
+	case BOOT_SET_IN_PROGRESS:
+		IPMIChassisGetBootOptHandler.SetInProgressHandler(addr, server, wrapper, message, request)
+	case BOOT_SERVICE_PARTITION_SELECTOR:
+		IPMIChassisGetBootOptHandler.ServicePartitionSelectorHandler(addr, server, wrapper, message, request)
+	case BOOT_SERVICE_PARTITION_SCAN:
+		IPMIChassisGetBootOptHandler.ServicePartitionScanHandler(addr, server, wrapper, message, request)
+	case BOOT_BMC_BOOT_FLAG_VALID_BIT_CLEARING:
+		IPMIChassisGetBootOptHandler.BMCBootFlagValidBitClearingHandler(addr, server, wrapper, message, request)
+	case BOOT_INFO_ACK:
+		IPMIChassisGetBootOptHandler.BootInfoAcknowledgementHandler(addr, server, wrapper, message, request)
+	case BOOT_FLAG:
+		IPMIChassisGetBootOptHandler.BootFlagHandler(addr, server, wrapper, message, request)
+	case BOOT_INITIATOR_INFO:
+		IPMIChassisGetBootOptHandler.BootInitiatorInfoHandler(addr, server, wrapper, message, request)
+	case BOOT_INITIATOR_MAILBOX:
+		IPMIChassisGetBootOptHandler.BootInitiatorMailbox(addr, server, wrapper, message, request)
 	}
 }
