@@ -20,7 +20,7 @@ func SetBootDevice(addr *net.UDPAddr, server *net.UDPConn, wrapper ipmi.IPMISess
 	localIP := utils.GetLocalIP(server)
 
 	buf := bytes.NewBuffer(selector.Parameters)
-	request := ipmi.IPMIChassisBootOptionBootFlags{}
+	request := ipmi.IPMIChassisSetBootOptionBootFlags{}
 	binary.Read(buf, binary.BigEndian, &request)
 
 	// Simulate: We just dump log but do nothing here.
