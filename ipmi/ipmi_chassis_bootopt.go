@@ -99,10 +99,10 @@ func init() {
 	IPMI_CHASSIS_SET_BOOT_OPTION_SetHandler(BOOT_SET_IN_PROGRESS, HandleIPMIChassisSetBootOptionSetInProgress)
 	IPMI_CHASSIS_SET_BOOT_OPTION_SetHandler(BOOT_INFO_ACK, HandleIPMIChassisSetBootOptionBootInfoAck)
 	IPMI_CHASSIS_SET_BOOT_OPTION_SetHandler(BOOT_FLAG, HandleIPMIChassisSetBootOptionBootFlags)
-
+	IPMI_CHASSIS_SET_BOOT_OPTION_SetHandler(BOOT_BMC_BOOT_FLAG_VALID_BIT_CLEARING, HandleIPMIChassisSetBootOptionValidBitClearing)
+	
 	IPMI_CHASSIS_SET_BOOT_OPTION_SetHandler(BOOT_SERVICE_PARTITION_SELECTOR, HandleIPMIChassisBootOptionNotSupport)
 	IPMI_CHASSIS_SET_BOOT_OPTION_SetHandler(BOOT_SERVICE_PARTITION_SCAN, HandleIPMIChassisBootOptionNotSupport)
-	IPMI_CHASSIS_SET_BOOT_OPTION_SetHandler(BOOT_BMC_BOOT_FLAG_VALID_BIT_CLEARING, HandleIPMIChassisBootOptionNotSupport)
 	IPMI_CHASSIS_SET_BOOT_OPTION_SetHandler(BOOT_INITIATOR_INFO, HandleIPMIChassisBootOptionNotSupport)
 	IPMI_CHASSIS_SET_BOOT_OPTION_SetHandler(BOOT_INITIATOR_MAILBOX, HandleIPMIChassisBootOptionNotSupport)
 
@@ -445,6 +445,44 @@ func HandleIPMIChassisSetBootOptionBootFlags(addr *net.UDPAddr, server *net.UDPC
 		log.Println("        IPMI CHASSIS BOOT BIOS: BOOT_BIOS_SHARED_MUX_TO_SYSTEM")
 	case BOOT_BIOS_SHARED_MUX_TO_BMC:
 		log.Println("        IPMI CHASSIS BOOT BIOS: BOOT_BIOS_SHARED_MUX_TO_BMC")
+	}
+
+	SendIPMIChassisSetBootOptionResponseBack(addr, server, wrapper, message);
+}
+
+const (
+	BOOT_FLAG_DONT_CLEAR_BITMASK_RESET_CYCLE_BY_PEF = 				0x10
+	BOOT_FLAG_DONT_CLEAR_BITMASK_CHASSIS_CTRL_NOT_RECV_WITHIN_60S_TIMEOUT = 	0x08
+	BOOT_FLAG_DONT_CLEAR_BITMASK_RESET_CYCLE_BY_WATCHDOG = 				0x04
+	BOOT_FLAG_DONT_CLEAR_BITMASK_PUSHBOTTON_OR_SOFT_RESET =				0x02
+	BOOT_FLAG_DONT_CLEAR_BITMASK_POWER_UP_VIA_PUSHBUTTON = 				0x01
+)
+
+func HandleIPMIChassisSetBootOptionValidBitClearing(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMISessionWrapper, message IPMIMessage, selector IPMIChassisBootOptionParameterSelector) {
+	localIP := utils.GetLocalIP(server)
+	_, ok := bmc.GetBMC(net.ParseIP(localIP))
+	if ! ok {
+		log.Println("        IPMI CHASSIS BOOT DEVICE: BMC", localIP, " is not found, skip this request.")
+		return
+	}
+
+	validBitDontClearOn := selector.Parameters[0]
+
+	// Simulate: We just dump log but do nothing here.
+	if validBitDontClearOn & BOOT_FLAG_DONT_CLEAR_BITMASK_RESET_CYCLE_BY_PEF != 0 {
+		log.Println("        IPMI CHASSIS BOOT FLAG Don't Clear On: Power Reset / Cycle caused by PEF")
+	}
+	if validBitDontClearOn & BOOT_FLAG_DONT_CLEAR_BITMASK_CHASSIS_CTRL_NOT_RECV_WITHIN_60S_TIMEOUT != 0 {
+		log.Println("        IPMI CHASSIS BOOT FLAG Don't Clear On: Chassis Control command not received within 60s timeout")
+	}
+	if validBitDontClearOn & BOOT_FLAG_DONT_CLEAR_BITMASK_RESET_CYCLE_BY_WATCHDOG != 0 {
+		log.Println("        IPMI CHASSIS BOOT FLAG Don't Clear On: Power Reset / Cycle caused by Watchdog")
+	}
+	if validBitDontClearOn & BOOT_FLAG_DONT_CLEAR_BITMASK_PUSHBOTTON_OR_SOFT_RESET != 0 {
+		log.Println("        IPMI CHASSIS BOOT FLAG Don't Clear On: push button reset or soft reset")
+	}
+	if validBitDontClearOn & BOOT_FLAG_DONT_CLEAR_BITMASK_POWER_UP_VIA_PUSHBUTTON != 0 {
+		log.Println("        IPMI CHASSIS BOOT FLAG Don't Clear On: Power up via pushbutton or wake event")
 	}
 
 	SendIPMIChassisSetBootOptionResponseBack(addr, server, wrapper, message);
