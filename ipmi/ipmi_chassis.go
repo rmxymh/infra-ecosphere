@@ -83,6 +83,7 @@ func init() {
 	IPMI_CHASSIS_SetHandler(IPMI_CMD_SET_CHASSIS_CAPABILITIES, HandleIPMIUnsupportedChassisCommand)
 	IPMI_CHASSIS_SetHandler(IPMI_CMD_SET_POWER_RESTORE_POLICY, HandleIPMIUnsupportedChassisCommand)
 	IPMI_CHASSIS_SetHandler(IPMI_CMD_GET_SYSTEM_RESTART_CAUSE, HandleIPMIUnsupportedChassisCommand)
+	IPMI_CHASSIS_SetHandler(IPMI_CMD_GET_SYSTEM_BOOT_OPTIONS, HandleIPMIUnsupportedChassisCommand)
 	IPMI_CHASSIS_SetHandler(IPMI_CMD_GET_POH_COUNTER, HandleIPMIUnsupportedChassisCommand)
 }
 
