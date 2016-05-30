@@ -416,7 +416,7 @@ func HandleIPMIGetDeviceID(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMIS
 	// serialize and send back
 	obuf := bytes.Buffer{}
 	SerializeRMCP(&obuf, rmcp)
-	SerializeIPMI(&obuf, responseWrapper, responseMessage)
+	SerializeIPMI(&obuf, responseWrapper, responseMessage, "")
 
 	server.WriteToUDP(obuf.Bytes(), addr)
 }
@@ -460,7 +460,7 @@ func HandleIPMIAuthenticationCapabilities(addr *net.UDPAddr, server *net.UDPConn
 	// serialize and send back
 	obuf := bytes.Buffer{}
 	SerializeRMCP(&obuf, rmcp)
-	SerializeIPMI(&obuf, responseWrapper, responseMessage)
+	SerializeIPMI(&obuf, responseWrapper, responseMessage, "")
 
 	server.WriteToUDP(obuf.Bytes(), addr)
 }
@@ -498,7 +498,7 @@ func HandleIPMIGetSessionChallenge(addr *net.UDPAddr, server *net.UDPConn, wrapp
 		rmcp := BuildUpRMCPForIPMI()
 
 		SerializeRMCP(&obuf, rmcp)
-		SerializeIPMI(&obuf, responseWrapper, responseMessage)
+		SerializeIPMI(&obuf, responseWrapper, responseMessage, "")
 	} else {
 		session := GetNewSession(user)
 		var challengeCode [16]uint8
@@ -518,7 +518,7 @@ func HandleIPMIGetSessionChallenge(addr *net.UDPAddr, server *net.UDPConn, wrapp
 		rmcp := BuildUpRMCPForIPMI()
 
 		SerializeRMCP(&obuf, rmcp)
-		SerializeIPMI(&obuf, responseWrapper, responseMessage)
+		SerializeIPMI(&obuf, responseWrapper, responseMessage, user.Password)
 	}
 
 	server.WriteToUDP(obuf.Bytes(), addr)
@@ -604,12 +604,11 @@ func HandleIPMIActivateSession(addr *net.UDPAddr, server *net.UDPConn, wrapper I
 
 		responseWrapper.SessionId = response.SessionId
 		responseWrapper.SequenceNumber = session.RemoteSessionSequenceNumber
-		responseWrapper.AuthenticationCode = GetAuthenticationCode(response.AuthenticationType, bmcUser.Password, response.SessionId, responseMessage, responseWrapper.SequenceNumber)
 		rmcp := BuildUpRMCPForIPMI()
 
 		obuf := bytes.Buffer{}
 		SerializeRMCP(&obuf, rmcp)
-		SerializeIPMI(&obuf, responseWrapper, responseMessage)
+		SerializeIPMI(&obuf, responseWrapper, responseMessage, bmcUser.Password)
 		server.WriteToUDP(obuf.Bytes(), addr)
 	}
 }
@@ -655,12 +654,11 @@ func HandleIPMISetSessionPrivilegeLevel(addr *net.UDPAddr, server *net.UDPConn, 
 
 		responseWrapper.SessionId = wrapper.SessionId
 		responseWrapper.SequenceNumber = session.RemoteSessionSequenceNumber
-		responseWrapper.AuthenticationCode = GetAuthenticationCode(wrapper.AuthenticationType, bmcUser.Password, responseWrapper.SessionId, responseMessage, responseWrapper.SequenceNumber)
 		rmcp := BuildUpRMCPForIPMI()
 
 		obuf := bytes.Buffer{}
 		SerializeRMCP(&obuf, rmcp)
-		SerializeIPMI(&obuf, responseWrapper, responseMessage)
+		SerializeIPMI(&obuf, responseWrapper, responseMessage, bmcUser.Password)
 		server.WriteToUDP(obuf.Bytes(), addr)
 	}
 }
@@ -697,12 +695,11 @@ func HandleIPMICloseSession(addr *net.UDPAddr, server *net.UDPConn, wrapper IPMI
 
 		responseWrapper.SessionId = wrapper.SessionId
 		responseWrapper.SequenceNumber = session.RemoteSessionSequenceNumber
-		responseWrapper.AuthenticationCode = GetAuthenticationCode(wrapper.AuthenticationType, bmcUser.Password, responseWrapper.SessionId, responseMessage, responseWrapper.SequenceNumber)
 		rmcp := BuildUpRMCPForIPMI()
 
 		obuf := bytes.Buffer{}
 		SerializeRMCP(&obuf, rmcp)
-		SerializeIPMI(&obuf, responseWrapper, responseMessage)
+		SerializeIPMI(&obuf, responseWrapper, responseMessage, bmcUser.Password)
 		server.WriteToUDP(obuf.Bytes(), addr)
 	}
 }

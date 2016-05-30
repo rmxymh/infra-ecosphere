@@ -221,12 +221,11 @@ func HandleIPMIChassisControl(addr *net.UDPAddr, server *net.UDPConn, wrapper ip
 
 			responseWrapper.SessionId = wrapper.SessionId
 			responseWrapper.SequenceNumber = session.RemoteSessionSequenceNumber
-			responseWrapper.AuthenticationCode = ipmi.GetAuthenticationCode(wrapper.AuthenticationType, bmcUser.Password, responseWrapper.SessionId, responseMessage, responseWrapper.SequenceNumber)
 			rmcp := ipmi.BuildUpRMCPForIPMI()
 
 			obuf := bytes.Buffer{}
 			ipmi.SerializeRMCP(&obuf, rmcp)
-			ipmi.SerializeIPMI(&obuf, responseWrapper, responseMessage)
+			ipmi.SerializeIPMI(&obuf, responseWrapper, responseMessage, bmcUser.Password)
 			server.WriteToUDP(obuf.Bytes(), addr)
 		}
 	}

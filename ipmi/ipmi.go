@@ -123,7 +123,7 @@ func SerializeIPMIMessage(buf *bytes.Buffer, message IPMIMessage) {
 	binary.Write(buf, binary.BigEndian, message.DataChecksum)
 }
 
-func SerializeIPMI(buf *bytes.Buffer, wrapper IPMISessionWrapper, message IPMIMessage) {
+func SerializeIPMI(buf *bytes.Buffer, wrapper IPMISessionWrapper, message IPMIMessage, bmcpass string) {
 	// Calculate data checksum
 	sum := uint32(0)
 	sum += uint32(message.SourceAddress)
@@ -153,6 +153,9 @@ func SerializeIPMI(buf *bytes.Buffer, wrapper IPMISessionWrapper, message IPMIMe
 	length += uint32(unsafe.Sizeof(message.DataChecksum))
 	wrapper.MessageLen = uint8(length)
 
+	if len(bmcpass) > 0 {
+		wrapper.AuthenticationCode = GetAuthenticationCode(wrapper.AuthenticationType, bmcpass, wrapper.SessionId, message, wrapper.SequenceNumber)
+	}
 	// output
 	SerializeIPMISessionWrapper(buf, wrapper)
 	SerializeIPMIMessage(buf, message)
@@ -199,7 +202,7 @@ func IPMIDeserializeAndExecute(buf io.Reader, addr *net.UDPAddr, server *net.UDP
 		log.Println(wrapper)
 		log.Println(message)
 		wbuf := bytes.Buffer{}
-		SerializeIPMI(&wbuf, wrapper, message)
+		SerializeIPMI(&wbuf, wrapper, message, "")
 		dumpByteBuffer(wbuf)
 	}
 }

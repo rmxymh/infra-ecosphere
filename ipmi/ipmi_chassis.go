@@ -176,12 +176,11 @@ func HandleIPMIGetChassisStatus(addr *net.UDPAddr, server *net.UDPConn, wrapper 
 
 			responseWrapper.SessionId = wrapper.SessionId
 			responseWrapper.SequenceNumber = session.RemoteSessionSequenceNumber
-			responseWrapper.AuthenticationCode = GetAuthenticationCode(wrapper.AuthenticationType, bmcUser.Password, responseWrapper.SessionId, responseMessage, responseWrapper.SequenceNumber)
 			rmcp := BuildUpRMCPForIPMI()
 
 			obuf := bytes.Buffer{}
 			SerializeRMCP(&obuf, rmcp)
-			SerializeIPMI(&obuf, responseWrapper, responseMessage)
+			SerializeIPMI(&obuf, responseWrapper, responseMessage, bmcUser.Password)
 			server.WriteToUDP(obuf.Bytes(), addr)
 		}
 	}
@@ -246,12 +245,11 @@ func HandleIPMIChassisControl(addr *net.UDPAddr, server *net.UDPConn, wrapper IP
 
 			responseWrapper.SessionId = wrapper.SessionId
 			responseWrapper.SequenceNumber = session.RemoteSessionSequenceNumber
-			responseWrapper.AuthenticationCode = GetAuthenticationCode(wrapper.AuthenticationType, bmcUser.Password, responseWrapper.SessionId, responseMessage, responseWrapper.SequenceNumber)
 			rmcp := BuildUpRMCPForIPMI()
 
 			obuf := bytes.Buffer{}
 			SerializeRMCP(&obuf, rmcp)
-			SerializeIPMI(&obuf, responseWrapper, responseMessage)
+			SerializeIPMI(&obuf, responseWrapper, responseMessage, bmcUser.Password)
 			server.WriteToUDP(obuf.Bytes(), addr)
 		}
 	}
