@@ -244,7 +244,7 @@ func HandleIPMIGetChassisStatus(addr *net.UDPAddr, server *net.UDPConn, wrapper 
 		}
 
 		localIP := utils.GetLocalIP(server)
-		bmc, ok := bmc.GetBMC(net.ParseIP(localIP))
+		_, ok := bmc.GetBMC(net.ParseIP(localIP))
 		if ! ok {
 			log.Printf("BMC %s is not found\n", localIP)
 		} else {
