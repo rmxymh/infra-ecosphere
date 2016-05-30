@@ -23,6 +23,12 @@ var routes = []Route {
 		GetAllBMCs,
 	},
 	Route {
+		"GetBMC",
+		"GET",
+		"/api/BMCs/{bmcip}",
+		GetBMC,
+	},
+	Route {
 		"SetPowerStatus",
 		"PUT",
 		"/api/BMCs/{bmcip}/power",

@@ -229,3 +229,59 @@ func HandleIPMIChassisControl(addr *net.UDPAddr, server *net.UDPConn, wrapper ip
 		}
 	}
 }
+
+func HandleIPMIGetChassisStatus(addr *net.UDPAddr, server *net.UDPConn, wrapper ipmi.IPMISessionWrapper, message ipmi.IPMIMessage) {
+	session, ok := ipmi.GetSession(wrapper.SessionId)
+	if ! ok {
+		log.Printf("Unable to find session 0x%08x\n", wrapper.SessionId)
+	} else {
+		bmcUser := session.User
+		code := ipmi.GetAuthenticationCode(wrapper.AuthenticationType, bmcUser.Password, wrapper.SessionId, message, wrapper.SequenceNumber)
+		if bytes.Compare(wrapper.AuthenticationCode[:], code[:]) == 0 {
+			log.Println("      IPMI Authentication Pass.")
+		} else {
+			log.Println("      IPMI Authentication Failed.")
+		}
+
+		localIP := utils.GetLocalIP(server)
+		bmc, ok := bmc.GetBMC(net.ParseIP(localIP))
+		if ! ok {
+			log.Printf("BMC %s is not found\n", localIP)
+		} else {
+			session.Inc()
+
+			vmstat := web.WebRespBMC{}
+			baseAPI := fmt.Sprintf("http://%s:%d/api/BMCs/%s", EcosphereIP, EcospherePort, localIP)
+
+			resp, err := napping.Get(baseAPI, nil, &vmstat, nil)
+			if err != nil {
+				log.Println("Failed to call ecophsere Web API for getting power status: ", err.Error())
+			} else if resp.Status() != 200 {
+				log.Println("Failed to call ecosphere Web API for getting power status: ", vmstat.PowerStatus)
+			}
+
+			response := ipmi.IPMIGetChassisStatusResponse{}
+			if vmstat.PowerStatus == "ON" {
+				response.CurrentPowerState |= ipmi.CHASSIS_POWER_STATE_BITMASK_POWER_ON
+			}
+			response.LastPowerEvent = 0
+			response.MiscChassisState = 0
+			response.FrontPanelButtonCapabilities = 0
+
+			dataBuf := bytes.Buffer{}
+			binary.Write(&dataBuf, binary.LittleEndian, response)
+
+			responseWrapper, responseMessage := ipmi.BuildResponseMessageTemplate(wrapper, message, (ipmi.IPMI_NETFN_CHASSIS | ipmi.IPMI_NETFN_RESPONSE), ipmi.IPMI_CMD_GET_CHASSIS_STATUS)
+			responseMessage.Data = dataBuf.Bytes()
+
+			responseWrapper.SessionId = wrapper.SessionId
+			responseWrapper.SequenceNumber = session.RemoteSessionSequenceNumber
+			rmcp := ipmi.BuildUpRMCPForIPMI()
+
+			obuf := bytes.Buffer{}
+			ipmi.SerializeRMCP(&obuf, rmcp)
+			ipmi.SerializeIPMI(&obuf, responseWrapper, responseMessage, bmcUser.Password)
+			server.WriteToUDP(obuf.Bytes(), addr)
+		}
+	}
+}

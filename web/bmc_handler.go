@@ -42,6 +42,26 @@ func GetAllBMCs(writer http.ResponseWriter, request *http.Request) {
 	json.NewEncoder(writer).Encode(resp)
 }
 
+func GetBMC(writer http.ResponseWriter, request *http.Request) {
+	vars := mux.Vars(request)
+	resp := WebRespBMC{}
+	resp.IP = vars["bmcip"]
+
+	bmcobj, ok := bmc.GetBMC(net.ParseIP(resp.IP))
+	if ! ok {
+		resp.PowerStatus = "ERROR: Not found"
+	} else {
+		status := "OFF"
+		if bmcobj.IsPowerOn() {
+			status = "ON"
+		}
+
+		resp.PowerStatus = status
+	}
+
+	json.NewEncoder(writer).Encode(resp)
+}
+
 type WebReqPowerOp struct {
 	Operation	string
 }
