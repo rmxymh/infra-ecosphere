@@ -14,6 +14,7 @@ const (
 
 type Instance struct {
 	Name string
+	FakeNode		bool
 
 	lastBootOrder		[]string
 	nextBootOrder		[]string
@@ -27,9 +28,10 @@ func init() {
 	instances = make(map[string]Instance)
 }
 
-func AddInstnace(name string) Instance {
+func AddInstnace(name string, fakeNode bool) Instance {
 	newInstance := Instance {
 		Name: name,
+		FakeNode: fakeNode,
 	}
 	instances[name] = newInstance
 	log.Println("Add instance ", name)
@@ -51,6 +53,10 @@ func GetInstance(name string) (instance Instance, ok bool) {
 }
 
 func (instance *Instance)IsRunning() bool {
+	if instance.FakeNode {
+		return true
+	}
+
 	machine, err := vbox.GetMachine(instance.Name)
 
 	if err == nil && machine.State == vbox.Running {
@@ -60,6 +66,10 @@ func (instance *Instance)IsRunning() bool {
 }
 
 func (instance *Instance)SetBootDevice(dev string) {
+	if instance.FakeNode {
+		return
+	}
+
 	machine, err := vbox.GetMachine(instance.Name)
 
 	if err != nil {
@@ -79,6 +89,10 @@ func (instance *Instance)SetBootDevice(dev string) {
 }
 
 func (instance *Instance)PowerOff() {
+	if instance.FakeNode {
+		return
+	}
+
 	machine, err := vbox.GetMachine(instance.Name)
 
 	if err != nil {
@@ -97,6 +111,10 @@ func (instance *Instance)PowerOff() {
 }
 
 func (instance *Instance)ACPIOff() {
+	if instance.FakeNode {
+		return
+	}
+
 	machine, err := vbox.GetMachine(instance.Name)
 
 	if err != nil {
@@ -115,6 +133,10 @@ func (instance *Instance)ACPIOff() {
 }
 
 func (instance *Instance)PowerOn() {
+	if instance.FakeNode {
+		return
+	}
+
 	machine, err := vbox.GetMachine(instance.Name)
 
 	if err != nil {
@@ -136,6 +158,10 @@ func (instance *Instance)PowerOn() {
 }
 
 func (instance *Instance)Reset() {
+	if instance.FakeNode {
+		return
+	}
+
 	machine, err := vbox.GetMachine(instance.Name)
 
 	if err != nil {

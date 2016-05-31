@@ -44,7 +44,11 @@ func LoadConfig(configFile string) Configuration {
 
 	// initialize BMCs and Instances
 	for _, node := range configuration.Nodes {
-		instance := vm.AddInstnace(node.VMName)
+		fakeNode := false
+		if len(node.VMName) == 0 {
+			fakeNode = true
+		}
+		instance := vm.AddInstnace(node.VMName, fakeNode)
 		bmc.AddBMC(net.ParseIP(node.BMCIP), instance)
 	}
 
