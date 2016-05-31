@@ -16,9 +16,8 @@ type Instance struct {
 	Name string
 	FakeNode		bool
 
-	lastBootOrder		[]string
+	defaultBootOrder	[]string
 	nextBootOrder		[]string
-	needToRestoreBootOrder	bool
 	changeBootOrder		bool
 }
 
@@ -32,8 +31,10 @@ func AddInstnace(name string, fakeNode bool) Instance {
 	newInstance := Instance {
 		Name: name,
 		FakeNode: fakeNode,
+		defaultBootOrder: []string {"disk", "net"},
 	}
 	instances[name] = newInstance
+	newInstance.NICInitialize()
 	log.Println("Add instance ", name)
 
 	return newInstance
@@ -101,13 +102,6 @@ func (instance *Instance)PowerOff() {
 	}
 
 	machine.Poweroff()
-
-	if instance.needToRestoreBootOrder {
-		machine.BootOrder = instance.lastBootOrder
-		machine.Modify()
-		instance.lastBootOrder = make([]string, 4)
-		instance.needToRestoreBootOrder = false
-	}
 }
 
 func (instance *Instance)ACPIOff() {
@@ -123,13 +117,6 @@ func (instance *Instance)ACPIOff() {
 	}
 
 	machine.Stop()
-
-	if instance.needToRestoreBootOrder {
-		machine.BootOrder = instance.lastBootOrder
-		machine.Modify()
-		instance.lastBootOrder = make([]string, 4)
-		instance.needToRestoreBootOrder = false
-	}
 }
 
 func (instance *Instance)PowerOn() {
@@ -145,13 +132,16 @@ func (instance *Instance)PowerOn() {
 	}
 
 	if instance.changeBootOrder {
-		instance.lastBootOrder = machine.BootOrder
 		machine.BootOrder = instance.nextBootOrder
 		machine.Modify()
 		instance.nextBootOrder = make([]string, 4)
 		instance.changeBootOrder = false
 		log.Println("Current Boot Order = ", machine.BootOrder)
-		instance.needToRestoreBootOrder = true
+	} else {
+		machine.BootOrder = instance.defaultBootOrder
+		machine.Modify()
+		instance.changeBootOrder = false
+		log.Println("Current Boot Order = ", machine.BootOrder)
 	}
 
 	machine.Start()
@@ -170,4 +160,22 @@ func (instance *Instance)Reset() {
 	}
 
 	machine.Reset()
+}
+
+func (instance *Instance)NICInitialize() {
+	if instance.FakeNode {
+		return
+	}
+
+	machine, err := vbox.GetMachine(instance.Name)
+
+	if err != nil {
+		log.Fatalf("    Instance: Failed to find VM %s and power on it: %s", instance.Name, err.Error())
+		return
+	}
+
+	nic := machine.NICs[0]
+	// force NIC1 to internal network so that we can deploy it via PXE.
+	nic.Network = vbox.NICNetInternal
+	machine.SetNIC(1, nic)
 }
