@@ -5,11 +5,15 @@ import (
 	"log"
 	"bytes"
 	"encoding/binary"
+	"fmt"
+
+	"github.com/jmcvetta/napping"
+)
+
+import (
 	"github.com/rmxymh/infra-ecosphere/utils"
 	"github.com/rmxymh/infra-ecosphere/ipmi"
-	"fmt"
 	"github.com/rmxymh/infra-ecosphere/web"
-	"github.com/jmcvetta/napping"
 	"github.com/rmxymh/infra-ecosphere/bmc"
 )
 
