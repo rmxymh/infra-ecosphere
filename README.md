@@ -5,6 +5,8 @@ Note: This project supports only IPMI v1.5 currently.
 
 ![image](https://raw.githubusercontent.com/rmxymh/sandbox/master/documents/infra-ecosphere/screenshot.png)
 
+![image](https://raw.githubusercontent.com/rmxymh/sandbox/master/documents/infra-ecosphere/maas_with_infra-ecosphere_screenshot.png)
+
 
 ## Current Supported Operations
 
@@ -43,12 +45,13 @@ $ cd infra-ecoshphere
 ```sh
 $ go get github.com/rmxymh/go-virtualbox
 $ go get github.com/htruong/go-md2
+$ go get github.com/gorilla/mux
+$ go get github.com/jmcvetta/napping
 ```
 
 * Build: infra-ecosphere main package is located at ${GOPATH}/src/github.com/rmxymh/infra-ecosphere/infra-ecosphere 
 
 ```sh
-$ cd infra-ecosphere
 $ go install
 ```
 
@@ -93,6 +96,10 @@ More detailed example:
 		{
 			"BMCIP": "127.0.1.2",
 			"VMName": "TestVM02"
+		},
+		{
+		    "BMCIP": "127.0.1.3",
+		    "VMName": ""
 		}
 	],
 	"BMCUsers": [
@@ -105,10 +112,11 @@ More detailed example:
 }
 ```
 
-It indicate that we have 1 BMC username and password pair, and we have 2 Virtual Machines that we want to map the simulated BMC:
+It indicate that we have 1 BMC username and password pair, and we have 3 Virtual Machines that we want to map the simulated BMC:
 
 * TestVM01: A Virtual Machine whose simulated BMC IP is 127.0.1.1
 * TestVM02: A Virtual Machine whose simulated BMC IP is 127.0.1.2
+* Note: we can find that BMC IP 127.0.1.3 maps to empty VMName. This configuration means that 127.0.1.3 maps to a mock VM, and it will response mocked IPMI response messages and does not affect any VM. This function is useful for large-scale IPMI command test. 
 
 Here we need to be aware that:
 
@@ -133,6 +141,17 @@ $ ipmitool -U admin -P admin -H 127.0.1.1 chassis power status
 ```
 
 
+### REST API
+
+Besides, you can operate VM via REST APIs, and currently this project supports the following APIs:
+
+* Get all BMC information: GET /api/BMCs
+* Get the information of the specified BMC: GET /api/BMCs/<BMC_IP>
+* Send power operation to the BMC: PUT /api/BMCs/<BMC_IP>/power
+* Set boot device to the BMC: PUT /api/BMCs/<BMC_IP>/bootdev
+
+For more detailed information, you can find it from [Web README.md](https://github.com/rmxymh/infra-ecosphere/blob/master/web/README.md)
+
 ## Note
 
 ### IPMI Package Libraries
@@ -142,18 +161,21 @@ If you want to leverage packet deserialize function of ipmi package, you can use
 ```go
 func IPMI_APP_SetHandler(command int, handler IPMI_App_Handler)
 func IPMI_CHASSIS_SetHandler(command int, handler IPMI_Chassis_Handler)
-func IPMI_CHASSIS_BOOT_OPTION_SetHandler(command int, handler IPMI_Chassis_BootOpt_Handler)
+func IPMI_CHASSIS_SET_BOOT_OPTION_SetHandler(command int, handler IPMI_Chassis_BootOpt_Handler)
+func IPMI_CHASSIS_GET_BOOT_OPTION_SetHandler(command int, handler IPMI_Chassis_BootOpt_Handler)
 ```
 
 More detail information can be found at func init() in ipmi_app.go, ipmi_chassis.go, and ipmi_chassis_bootopt.go. For the remaining commands, they may be supported in the future. Besides, if you implement them and have willing to contribute, welcome to make pull request, and we will appreciate your great contributions.
 
+## IPMI Proxy
+
+IPMI Proxy is a utility as a proxy which help us to pass the IPMI command out and response the result to the sender. 
+
+For more detailed information, you can obtain from this link: [IPMI Proxy README.md](https://github.com/rmxymh/infra-ecosphere/blob/master/ipmi-proxy/README.md) 
+
 
 ## TODO
 
-* Separate IPMI packet management as a library so that every one can use it with callback functions.
-* Find a way to make local VM can touch IPMI server in the host machine.
-    * Tunnel (Evaluating)
-    * Expose BMC operations as a Web Service, and local VM can intercept IPMI packets and convert them into the corresponding API calls. (Evaluating)
 * Test cases
 
 ## License
