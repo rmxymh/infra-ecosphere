@@ -240,7 +240,7 @@ func HandleIPMIChassisControl(addr *net.UDPAddr, server *net.UDPConn, wrapper IP
 
 			session.Inc()
 
-			responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_APP | IPMI_NETFN_RESPONSE), IPMI_CMD_CHASSIS_CONTROL)
+			responseWrapper, responseMessage := BuildResponseMessageTemplate(wrapper, message, (IPMI_NETFN_CHASSIS | IPMI_NETFN_RESPONSE), IPMI_CMD_CHASSIS_CONTROL)
 
 			responseWrapper.SessionId = wrapper.SessionId
 			responseWrapper.SequenceNumber = session.RemoteSessionSequenceNumber
